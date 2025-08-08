@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-// Simple test route first
 router.get('/test', (req, res) => {
   res.json({
     message: 'Auth routes working!',
@@ -9,7 +8,7 @@ router.get('/test', (req, res) => {
   });
 });
 
-// We'll add the actual auth routes after we confirm this works
+
 router.post('/register', (req, res) => {
   res.json({ message: 'Register endpoint - coming soon' });
 });
