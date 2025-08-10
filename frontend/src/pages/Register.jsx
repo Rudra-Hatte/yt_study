@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
   const { register } = useAuth();
@@ -20,38 +20,32 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
-    // Validate passwords match
+    // Client-side validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      toast.error('Passwords do not match.');
       setLoading(false);
       return;
     }
 
-    // Validate password length
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      toast.error('Password must be at least 6 characters.');
       setLoading(false);
       return;
     }
 
-    const result = await register({
-      username: formData.username,
-      email: formData.email,
-      password: formData.password
-    });
+    const result = await register(formData.name, formData.email, formData.password);
     
     if (result.success) {
-      navigate('/dashboard');
+      toast.success('Account created successfully! Please log in.');
+      navigate('/login');
     } else {
-      setError(result.error);
+      toast.error(result.error || 'Registration failed. Please try again.');
     }
     
     setLoading(false);
@@ -79,27 +73,21 @@ const Register = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
-            
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Full name
               </label>
               <div className="mt-1">
                 <input
-                  id="username"
-                  name="username"
+                  id="name"
+                  name="name"
                   type="text"
-                  autoComplete="username"
+                  autoComplete="name"
                   required
-                  value={formData.username}
+                  value={formData.name}
                   onChange={handleChange}
                   className="input-field"
-                  placeholder="johndoe"
+                  placeholder="John Doe"
                 />
               </div>
             </div>
@@ -144,7 +132,7 @@ const Register = () => {
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
+                Confirm password
               </label>
               <div className="mt-1">
                 <input
@@ -170,15 +158,11 @@ const Register = () => {
                 {loading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 ) : (
-                  'Create Account'
+                  'Create account'
                 )}
               </button>
             </div>
           </form>
-
-          <div className="mt-6 text-center text-xs text-gray-500">
-            By signing up, you agree to our Terms of Service and Privacy Policy
-          </div>
         </div>
       </div>
     </div>

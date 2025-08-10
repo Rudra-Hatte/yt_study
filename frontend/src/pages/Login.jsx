@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
   const { login } = useAuth();
@@ -21,20 +21,19 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    setError(''); // Clear error when user types
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
+      toast.success('Welcome back! Login successful.');
       navigate(from, { replace: true });
     } else {
-      setError(result.error);
+      toast.error(result.error || 'Login failed. Please try again.');
     }
     
     setLoading(false);
@@ -62,12 +61,6 @@ const Login = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
-            
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
