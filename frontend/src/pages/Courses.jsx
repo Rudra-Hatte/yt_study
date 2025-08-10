@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import SkeletonCourseCard from '../components/SkeletonCourseCard';
+import toast from 'react-hot-toast';
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
@@ -15,47 +17,49 @@ const Courses = () => {
   const fetchCourses = async () => {
     try {
       // Mock data for now
-      setCourses([
-        {
-          id: 1,
-          title: 'Complete React.js Tutorial',
-          description: 'Learn React from scratch with this comprehensive tutorial covering hooks, components, and state management.',
-          thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
-          duration: '3h 45m',
-          progress: 75,
-          totalLessons: 24,
-          completedLessons: 18,
-          createdAt: '2024-01-15',
-          status: 'in-progress'
-        },
-        {
-          id: 2,
-          title: 'Node.js Backend Development',
-          description: 'Build scalable backend applications with Node.js, Express, and MongoDB.',
-          thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
-          duration: '5h 20m',
-          progress: 45,
-          totalLessons: 32,
-          completedLessons: 14,
-          createdAt: '2024-01-10',
-          status: 'in-progress'
-        },
-        {
-          id: 3,
-          title: 'Machine Learning Fundamentals',
-          description: 'Introduction to machine learning concepts, algorithms, and practical applications.',
-          thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
-          duration: '8h 15m',
-          progress: 100,
-          totalLessons: 45,
-          completedLessons: 45,
-          createdAt: '2024-01-05',
-          status: 'completed'
-        }
-      ]);
-      setLoading(false);
+      setTimeout(() => {
+        setCourses([
+          {
+            id: 1,
+            title: 'Complete React.js Tutorial',
+            description: 'Learn React from scratch with this comprehensive tutorial covering hooks, components, and state management.',
+            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            duration: '3h 45m',
+            progress: 75,
+            totalLessons: 24,
+            completedLessons: 18,
+            createdAt: '2024-01-15',
+            status: 'in-progress'
+          },
+          {
+            id: 2,
+            title: 'Node.js Backend Development',
+            description: 'Build scalable backend applications with Node.js, Express, and MongoDB.',
+            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            duration: '5h 20m',
+            progress: 45,
+            totalLessons: 32,
+            completedLessons: 14,
+            createdAt: '2024-01-10',
+            status: 'in-progress'
+          },
+          {
+            id: 3,
+            title: 'Machine Learning Fundamentals',
+            description: 'Introduction to machine learning concepts, algorithms, and practical applications.',
+            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            duration: '8h 15m',
+            progress: 100,
+            totalLessons: 45,
+            completedLessons: 45,
+            createdAt: '2024-01-05',
+            status: 'completed'
+          }
+        ]);
+        setLoading(false);
+      }, 1500); // Simulate network delay
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      toast.error('Error fetching courses.');
       setLoading(false);
     }
   };
@@ -66,17 +70,14 @@ const Courses = () => {
 
     try {
       // TODO: Replace with actual API call
-      // const response = await axios.post('/courses', { youtubeUrl: newCourseUrl });
-      
-      // Mock success
       setTimeout(() => {
-        alert('Course created successfully! (This is a demo)');
+        toast.success('Course created successfully! (This is a demo)');
         setNewCourseUrl('');
         setShowCreateForm(false);
         setCreating(false);
       }, 2000);
     } catch (error) {
-      console.error('Error creating course:', error);
+      toast.error('Error creating course.');
       setCreating(false);
     }
   };
@@ -91,14 +92,6 @@ const Courses = () => {
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Not Started</span>;
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -172,52 +165,55 @@ const Courses = () => {
           </div>
         )}
 
-        {/* Courses Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
-            <div key={course.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-              <img
-                src={course.thumbnail}
-                alt={course.title}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 truncate">{course.title}</h3>
-                  {getStatusBadge(course.status)}
-                </div>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>{course.duration}</span>
-                    <span>{course.completedLessons}/{course.totalLessons} lessons</span>
+        {/* Courses Grid or Skeletons */}
+        {loading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => <SkeletonCourseCard key={i} />)}
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {courses.map((course) => (
+              <div key={course.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <img
+                  src={course.thumbnail}
+                  alt={course.title}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 truncate">{course.title}</h3>
+                    {getStatusBadge(course.status)}
                   </div>
-                  
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${course.progress}%` }}
-                    ></div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">{course.progress}% complete</span>
-                    <Link
-                      to={`/courses/${course.id}`}
-                      className="btn-primary text-sm"
-                    >
-                      {course.status === 'completed' ? 'Review' : 'Continue'}
-                    </Link>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>{course.duration}</span>
+                      <span>{course.completedLessons}/{course.totalLessons} lessons</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${course.progress}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">{course.progress}% complete</span>
+                      <Link
+                        to={`/courses/${course.id}`}
+                        className="btn-primary text-sm"
+                      >
+                        {course.status === 'completed' ? 'Review' : 'Continue'}
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Empty State */}
-        {courses.length === 0 && (
+        {!loading && courses.length === 0 && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📚</div>
             <h3 className="text-xl font-medium text-gray-900 mb-2">No courses yet</h3>
