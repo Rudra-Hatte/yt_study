@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }) => {
           // For demo, we'll simulate a logged-in user
           setUser({
             id: 1,
+            name: 'Rudra Hatte',
             username: 'Rudra-Hatte',
             email: 'rudra@ytstudy.com'
           });
@@ -50,14 +51,32 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      // For demo purposes, simulate successful login
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Demo credentials
       if (email === 'demo@ytstudy.com' && password === 'demo123') {
         const user = {
           id: 1,
+          name: 'Rudra Hatte',
           username: 'Rudra-Hatte',
           email: 'demo@ytstudy.com'
         };
-        const token = 'demo_token_123';
+        const token = 'demo_token_' + Date.now();
+        
+        setUser(user);
+        setToken(token);
+        localStorage.setItem('token', token);
+        
+        return { success: true, user };
+      } else if (email === 'rudra@ytstudy.com' && password === 'rudra123') {
+        const user = {
+          id: 2,
+          name: 'Rudra Hatte',
+          username: 'Rudra-Hatte',
+          email: 'rudra@ytstudy.com'
+        };
+        const token = 'rudra_token_' + Date.now();
         
         setUser(user);
         setToken(token);
@@ -65,25 +84,40 @@ export const AuthProvider = ({ children }) => {
         
         return { success: true, user };
       } else {
-        return { success: false, error: 'Invalid credentials' };
+        return { success: false, error: 'Invalid email or password' };
       }
     } catch (error) {
       return { 
         success: false, 
-        error: 'Login failed' 
+        error: 'Network error. Please try again.' 
       };
     }
   };
 
-  const register = async (userData) => {
+  const register = async (name, email, password) => {
     try {
-      // For demo purposes, simulate successful registration
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
+      // Check if email already exists (demo)
+      if (email === 'demo@ytstudy.com' || email === 'rudra@ytstudy.com') {
+        return { 
+          success: false, 
+          error: 'Email already exists. Please use a different email.' 
+        };
+      }
+      
+      // Simulate successful registration
       const user = {
-        id: 1,
-        username: userData.username,
-        email: userData.email
+        id: Date.now(), // Simple ID generation for demo
+        name: name,
+        username: name.replace(/\s+/g, '-').toLowerCase(),
+        email: email
       };
-      const token = 'demo_token_123';
+      
+      // For demo, we'll auto-login after registration
+      // In real app, you might want to redirect to login or send verification email
+      const token = 'new_user_token_' + Date.now();
       
       setUser(user);
       setToken(token);
@@ -93,7 +127,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: 'Registration failed' 
+        error: 'Registration failed. Please try again.' 
       };
     }
   };
@@ -102,6 +136,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
   };
 
   const value = {
