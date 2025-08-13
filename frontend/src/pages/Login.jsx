@@ -39,6 +39,23 @@ const Login = () => {
     setLoading(false);
   };
 
+  // Quick login for testing
+  const handleDemoLogin = async (email, password) => {
+    setFormData({ email, password });
+    setLoading(true);
+
+    const result = await login(email, password);
+    
+    if (result.success) {
+      toast.success('Demo login successful!');
+      navigate(from, { replace: true });
+    } else {
+      toast.error(result.error || 'Demo login failed.');
+    }
+    
+    setLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -120,13 +137,29 @@ const Login = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Demo Credentials</span>
+                <span className="px-2 bg-white text-gray-500">Quick Test Login</span>
               </div>
             </div>
             
-            <div className="mt-4 text-center text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-              <p><strong>Email:</strong> demo@ytstudy.com</p>
-              <p><strong>Password:</strong> demo123</p>
+            <div className="mt-4 space-y-3">
+              <div className="text-center text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <p className="mb-2 font-medium">Backend Authentication Ready! 🚀</p>
+                <p className="text-xs text-gray-500">Create an account or login with your credentials</p>
+              </div>
+              
+              {/* Quick Demo Button */}
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('test@example.com', 'password123')}
+                disabled={loading}
+                className="w-full text-sm py-2 px-4 border border-gray-300 rounded-md text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Testing...' : 'Quick Test with Demo Account'}
+              </button>
+              
+              <div className="text-xs text-center text-gray-500">
+                <p>Or register a new account to test the full flow</p>
+              </div>
             </div>
           </div>
         </div>

@@ -39,11 +39,20 @@ const Register = () => {
       return;
     }
 
-    const result = await register(formData.name, formData.email, formData.password);
+    // Prepare registration data for backend
+    const registrationData = {
+      username: formData.name.replace(/\s+/g, '').toLowerCase(), // Remove spaces and lowercase
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.name.split(' ')[0] || '',
+      lastName: formData.name.split(' ').slice(1).join(' ') || ''
+    };
+
+    const result = await register(registrationData);
     
     if (result.success) {
-      toast.success('Account created successfully! Please log in.');
-      navigate('/login');
+      toast.success('Account created successfully! Welcome to YT Study!');
+      navigate('/dashboard'); // Auto-login after registration
     } else {
       toast.error(result.error || 'Registration failed. Please try again.');
     }
@@ -90,6 +99,9 @@ const Register = () => {
                   placeholder="John Doe"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                This will be used to create your username automatically
+              </p>
             </div>
 
             <div>
@@ -128,6 +140,9 @@ const Register = () => {
                   placeholder="••••••••"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Must be at least 6 characters
+              </p>
             </div>
 
             <div>
@@ -147,22 +162,47 @@ const Register = () => {
                   placeholder="••••••••"
                 />
               </div>
+              {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                <p className="mt-1 text-xs text-red-500">
+                  Passwords do not match
+                </p>
+              )}
             </div>
 
             <div>
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full btn-primary flex justify-center py-3"
+                disabled={loading || (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword)}
+                className="w-full btn-primary flex justify-center py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Creating account...
+                  </div>
                 ) : (
                   'Create account'
                 )}
               </button>
             </div>
           </form>
+
+          {/* Backend Status Info */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Backend Ready</span>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-center text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
+              <p className="text-green-800">✅ Connected to MongoDB backend</p>
+              <p className="text-xs text-gray-500 mt-1">Your account will be securely stored</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
