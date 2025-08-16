@@ -6,65 +6,44 @@ const connectDB = require('./config/database');
 // Load environment variables
 dotenv.config();
 
+// Initialize express app
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
+// Connect to database
 connectDB();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://yourdomain.com'] 
+    : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
+// Import routes
+const authRoutes = require('./routes/auth');
+const aiRoutes = require('./routes/ai');
+const courseRoutes = require('./routes/courses');
+const userRoutes = require('./routes/users');
 
-// Routes
-app.get('/', (req, res) => {
-  res.json({
-    message: '🎓 YT Study API is running!',
-    project: 'YT Study - YouTube Course Web App',
-    version: '1.0.0',
-    author: 'Rudra-Hatte',
+// Health check route
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'YT Study Backend is running!',
     timestamp: new Date().toISOString(),
-    endpoints: {
-      auth: '/api/auth',
-      courses: '/api/courses',
-      users: '/api/users',
-      ai: '/api/ai'
-    }
+    version: '1.0.0'
   });
 });
 
-// API Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/courses', require('./routes/courses'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/ai', require('./routes/ai'));
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('❌ Error:', err.stack);
-  
-  const error = {
-    message: err.message || 'Something went wrong!',
-    status: err.status || 500
-  };
-
-  if (process.env.NODE_ENV === 'development') {
-    error.stack = err.stack;
-  }
-
-  res.status(error.status).json({ error });
-});
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/users', userRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -74,18 +53,19 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
-🚀 Server running on port ${PORT}
-🌐 API URL: http://localhost:${PORT}
-📚 Environment: ${process.env.NODE_ENV || 'development'}
-⏰ Started at: ${new Date().toLocaleString()}
-  `);
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('Global error:', error);
+  res.status(error.status || 500).json({
+    error: error.name || 'Internal Server Error',
+    message: error.message || 'Something went wrong'
+  });
 });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.error('❌ Unhandled Promise Rejection:', err);
-  process.exit(1);
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 YT Study Backend running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
 });
