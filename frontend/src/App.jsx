@@ -6,27 +6,40 @@ import { Toaster } from 'react-hot-toast';
 // Import actual page components
 import Register from './pages/Register';
 import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import CreateCourse from './pages/CreateCourse';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
 import Courses from './pages/Courses';
 
-// Only Dashboard is defined locally (you can move this to a separate file later)
-const Dashboard = () => (
-  <div className="min-h-screen bg-gray-50 py-8">
-    <div className="max-w-7xl mx-auto px-4">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <p>Welcome to your dashboard!</p>
-      </div>
-    </div>
-  </div>
-);
-
 function App() {
   return (
     <AuthProvider>
-      <Toaster position="top-right" />
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         <main>
@@ -35,6 +48,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            
             {/* Protected Routes */}
             <Route 
               path="/dashboard" 
@@ -52,6 +66,23 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/courses/create" 
+              element={
+                <ProtectedRoute>
+                  <CreateCourse />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/create-course" 
+              element={
+                <ProtectedRoute>
+                  <CreateCourse />
+                </ProtectedRoute>
+              } 
+            />
+            
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

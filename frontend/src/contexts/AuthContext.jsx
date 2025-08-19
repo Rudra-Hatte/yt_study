@@ -29,106 +29,158 @@ export const AuthProvider = ({ children }) => {
   // Check if user is logged in on app start
   useEffect(() => {
     const checkAuth = async () => {
-      if (token) {
+      const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+
+      if (savedToken && savedUser) {
         try {
-          // For demo, we'll simulate a logged-in user
-          setUser({
-            id: 1,
-            name: 'Rudra Hatte',
-            username: 'Rudra-Hatte',
-            email: 'rudra@ytstudy.com'
-          });
+          // Verify token is still valid with backend
+          const response = await axios.get('/auth/profile');
+          
+          if (response.data.success) {
+            setUser(response.data.data.user);
+            setToken(savedToken);
+          } else {
+            // Token is invalid, clear storage
+            logout();
+          }
         } catch (error) {
           console.error('Token verification failed:', error);
-          logout();
+          // Check if it's a network error vs auth error
+          if (error.response?.status === 401) {
+            logout(); // Invalid token
+          } else {
+            // Network error, try to use saved user data temporarily
+            try {
+              const parsedUser = JSON.parse(savedUser);
+              setUser(parsedUser);
+              setToken(savedToken);
+            } catch (parseError) {
+              logout();
+            }
+          }
         }
       }
       setLoading(false);
     };
 
     checkAuth();
-  }, [token]);
+  }, []);
 
   const login = async (email, password) => {
     try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Demo credentials
-      if (email === 'demo@ytstudy.com' && password === 'demo123') {
-        const user = {
-          id: 1,
-          name: 'Rudra Hatte',
-          username: 'Rudra-Hatte',
-          email: 'demo@ytstudy.com'
-        };
-        const token = 'demo_token_' + Date.now();
+      const response = await axios.post('/auth/login', {
+        email,
+        password
+      });
+
+      if (response.data.success) {
+        const { user: userData, token: authToken } = response.data.data;
         
-        setUser(user);
-        setToken(token);
-        localStorage.setItem('token', token);
+        // Store in state
+        setUser(userData);
+        setToken(authToken);
         
-        return { success: true, user };
-      } else if (email === 'rudra@ytstudy.com' && password === 'rudra123') {
-        const user = {
-          id: 2,
-          name: 'Rudra Hatte',
-          username: 'Rudra-Hatte',
-          email: 'rudra@ytstudy.com'
-        };
-        const token = 'rudra_token_' + Date.now();
+        // Store in localStorage
+        localStorage.setItem('token', authToken);
+        localStorage.setItem('user', JSON.stringify(userData));
         
-        setUser(user);
-        setToken(token);
-        localStorage.setItem('token', token);
+        // Update axios headers
+        axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
         
-        return { success: true, user };
+        return { success: true, user: userData };
       } else {
-        return { success: false, error: 'Invalid email or password' };
+        return { 
+          success: false, 
+          error: response.data.message || 'Login failed' 
+        };
       }
     } catch (error) {
-      return { 
-        success: false, 
-        error: 'Network error. Please try again.' 
-      };
+      console.error('Login error:', error);
+      
+      // Handle different types of errors
+      if (error.response?.data?.message) {
+        return { 
+          success: false, 
+          error: error.response.data.message 
+        };
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+        return { 
+          success: false, 
+          error: 'Network error. Please check your connection and try again.' 
+        };
+      } else {
+        return { 
+          success: false, 
+          error: 'Login failed. Please try again.' 
+        };
+      }
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (userData) => {
     try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      // Handle both old format (name, email, password) and new format (userData object)
+      let registrationData;
       
-      // Check if email already exists (demo)
-      if (email === 'demo@ytstudy.com' || email === 'rudra@ytstudy.com') {
+      if (typeof userData === 'string') {
+        // Old format: register(name, email, password)
+        const [name, email, password] = arguments;
+        registrationData = {
+          username: name.replace(/\s+/g, '').toLowerCase(),
+          email,
+          password,
+          firstName: name.split(' ')[0] || '',
+          lastName: name.split(' ').slice(1).join(' ') || ''
+        };
+      } else {
+        // New format: register(userDataObject)
+        registrationData = userData;
+      }
+
+      const response = await axios.post('/auth/register', registrationData);
+
+      if (response.data.success) {
+        const { user: newUser, token: authToken } = response.data.data;
+        
+        // Store in state
+        setUser(newUser);
+        setToken(authToken);
+        
+        // Store in localStorage
+        localStorage.setItem('token', authToken);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        
+        // Update axios headers
+        axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+        
+        return { success: true, user: newUser };
+      } else {
         return { 
           success: false, 
-          error: 'Email already exists. Please use a different email.' 
+          error: response.data.message || 'Registration failed' 
         };
       }
-      
-      // Simulate successful registration
-      const user = {
-        id: Date.now(), // Simple ID generation for demo
-        name: name,
-        username: name.replace(/\s+/g, '-').toLowerCase(),
-        email: email
-      };
-      
-      // For demo, we'll auto-login after registration
-      // In real app, you might want to redirect to login or send verification email
-      const token = 'new_user_token_' + Date.now();
-      
-      setUser(user);
-      setToken(token);
-      localStorage.setItem('token', token);
-      
-      return { success: true, user };
     } catch (error) {
-      return { 
-        success: false, 
-        error: 'Registration failed. Please try again.' 
-      };
+      console.error('Registration error:', error);
+      
+      // Handle different types of errors
+      if (error.response?.data?.message) {
+        return { 
+          success: false, 
+          error: error.response.data.message 
+        };
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+        return { 
+          success: false, 
+          error: 'Network error. Please check your connection and try again.' 
+        };
+      } else {
+        return { 
+          success: false, 
+          error: 'Registration failed. Please try again.' 
+        };
+      }
     }
   };
 
@@ -136,7 +188,31 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
+  };
+
+  // Add utility methods for API calls
+  const apiCall = async (method, endpoint, data = null) => {
+    try {
+      const config = {
+        method,
+        url: endpoint,
+        ...(data && { data })
+      };
+      
+      const response = await axios(config);
+      return response.data;
+    } catch (error) {
+      console.error(`API call failed: ${method} ${endpoint}`, error);
+      
+      // If token is invalid, logout user
+      if (error.response?.status === 401) {
+        logout();
+      }
+      
+      throw error;
+    }
   };
 
   const value = {
@@ -145,7 +221,9 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     loading,
-    isAuthenticated: !!user
+    token,
+    isAuthenticated: !!user,
+    apiCall // Utility for making authenticated API calls
   };
 
   return (
