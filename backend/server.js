@@ -1,71 +1,74 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const connectDB = require('./config/database');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-// Load environment variables
-dotenv.config();
+const authRoutes = require('./routes/auth');
+const videoRoutes = require('./routes/videos');
+const quizRoutes = require('./routes/quizzes');
+const flashcardRoutes = require('./routes/flashcards');
+const progressRoutes = require('./routes/progress');
+const aiRoutes = require('./routes/ai');
 
-// Initialize express app
 const app = express();
 
-// Connect to database
-connectDB();
-
-// Middleware
+// Security middleware
+app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
-    : ['http://localhost:3000', 'http://localhost:5173'],
+  origin: process.env.NODE_ENV === 'production' ? 'your-frontend-domain.com' : 'http://localhost:3000',
   credentials: true
 }));
 
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use(limiter);
+
+// Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Import routes
-const authRoutes = require('./routes/auth');
-const aiRoutes = require('./routes/ai');
-const courseRoutes = require('./routes/courses');
-const userRoutes = require('./routes/users');
+// Database connection
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
 
-// Health check route
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/flashcards', flashcardRoutes);
+app.use('/api/progress', progressRoutes);
+app.use('/api/ai', aiRoutes);
+
+// Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'YT Study Backend is running!',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/courses', courseRoutes);
-app.use('/api/users', userRoutes);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : {}
+  });
+});
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    message: `Cannot ${req.method} ${req.originalUrl}`
-  });
-});
-
-// Global error handler
-app.use((error, req, res, next) => {
-  console.error('Global error:', error);
-  res.status(error.status || 500).json({
-    error: error.name || 'Internal Server Error',
-    message: error.message || 'Something went wrong'
-  });
+  res.status(404).json({ message: 'Route not found' });
 });
 
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
-  console.log(`🚀 YT Study Backend running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`Server running on port ${PORT}`);
 });
