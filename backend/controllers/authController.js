@@ -1,28 +1,17 @@
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
 
-// Generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-};
+// Register a new user
+exports.register = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
 
-// Register new user
-const register = async (req, res) => {
+  const { username, email, password, firstName, lastName } = req.body;
+
   try {
-    const { username, email, password, firstName, lastName } = req.body;
-
-    // Validation
-    if (!username || !email || !password) {
-      return res.status(400).json({
-        error: 'Validation error',
-        message: 'Username, email, and password are required'
-      });
-    }
-
     // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { username }]
@@ -51,7 +40,11 @@ const register = async (req, res) => {
     await user.save();
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
     res.status(201).json({
       success: true,
@@ -85,18 +78,15 @@ const register = async (req, res) => {
 };
 
 // Login user
-const login = async (req, res) => {
+exports.login = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { email, password } = req.body;
+
   try {
-    const { email, password } = req.body;
-
-    // Validation
-    if (!email || !password) {
-      return res.status(400).json({
-        error: 'Validation error',
-        message: 'Email and password are required'
-      });
-    }
-
     // Find user by email
     const user = await User.findOne({ email }).select('+password');
     
@@ -118,7 +108,11 @@ const login = async (req, res) => {
     }
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
     res.json({
       success: true,
@@ -146,18 +140,13 @@ const login = async (req, res) => {
 };
 
 // Get current user profile
-const getProfile = async (req, res) => {
+exports.getMe = async (req, res) => {
   try {
-    res.json({
-      success: true,
-      data: { user: req.user }
-    });
-  } catch (error) {
-    console.error('Get profile error:', error);
-    res.status(500).json({
-      error: 'Failed to fetch profile',
-      message: error.message
-    });
+    const user = await User.findById(req.user.id).select('-password');
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
   }
 };
 
@@ -173,7 +162,7 @@ const changePassword = async (req, res) => {
 module.exports = {
   register,
   login,
-  getProfile,
+  getMe,
   updateProfile,
   changePassword
 };
