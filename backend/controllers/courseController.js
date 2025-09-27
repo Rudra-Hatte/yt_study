@@ -1,218 +1,228 @@
 const Course = require('../models/Course');
 const Video = require('../models/Video');
-const axios = require('axios');
+const User = require('../models/User');
+const { validationResult } = require('express-validator');
 
-// Get all public courses
-const getAllCourses = async (req, res) => {
+// Get all courses
+exports.getCourses = async (req, res) => {
   try {
-    const { page = 1, limit = 10, category, search, difficulty } = req.query;
+    const courses = await Course.find({ isPublic: true })
+      .populate('creator', 'name avatar')
+      .sort({ createdAt: -1 });
     
-    const filter = { isPublic: true, status: 'published' };
-    
-    if (category) filter.category = category;
-    if (difficulty) filter.difficulty = difficulty;
-    if (search) {
-      filter.$text = { $search: search };
-    }
-
-    const courses = await Course.find(filter)
-      .populate('creator', 'username profile.firstName profile.lastName')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const total = await Course.countDocuments(filter);
-
-    res.json({
-      success: true,
-      data: {
-        courses,
-        pagination: {
-          current: parseInt(page),
-          pages: Math.ceil(total / limit),
-          total
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Get courses error:', error);
-    res.status(500).json({
-      error: 'Failed to fetch courses',
-      message: error.message
-    });
+    res.json(courses);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
   }
 };
 
 // Get course by ID
-const getCourseById = async (req, res) => {
+exports.getCourse = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
-      .populate('creator', 'username profile')
-      .populate('videos')
-      .populate('quizzes');
-
+      .populate('creator', 'name avatar');
+    
     if (!course) {
-      return res.status(404).json({
-        error: 'Course not found',
-        message: 'Course with this ID does not exist'
-      });
+      return res.status(404).json({ msg: 'Course not found' });
     }
-
-    res.json({
-      success: true,
-      data: { course }
-    });
-  } catch (error) {
-    console.error('Get course error:', error);
-    res.status(500).json({
-      error: 'Failed to fetch course',
-      message: error.message
-    });
+    
+    // Check if course is private and user is not the creator
+    if (!course.isPublic && 
+        (!req.user || req.user.id.toString() !== course.creator._id.toString())) {
+      return res.status(403).json({ msg: 'Access denied' });
+    }
+    
+    res.json(course);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Course not found' });
+    }
+    res.status(500).send('Server error');
   }
 };
 
-// Create course from YouTube URL
-const createCourseFromYoutube = async (req, res) => {
+// Create a course
+exports.createCourse = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  
+  const { title, description, category, tags, thumbnail, isPublic, difficulty } = req.body;
+  
   try {
-    const { youtubeUrl, title, description, category = 'other' } = req.body;
-
-    if (!youtubeUrl || !title) {
-      return res.status(400).json({
-        error: 'Validation error',
-        message: 'YouTube URL and title are required'
-      });
-    }
-
-    // Extract video/playlist ID from URL
-    const videoMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-    const playlistMatch = youtubeUrl.match(/[?&]list=([^&\n?#]+)/);
-
-    if (!videoMatch && !playlistMatch) {
-      return res.status(400).json({
-        error: 'Invalid URL',
-        message: 'Please provide a valid YouTube video or playlist URL'
-      });
-    }
-
-    const sourceType = playlistMatch ? 'youtube_playlist' : 'youtube_video';
-    
-    // Create course
-    const course = new Course({
+    const newCourse = new Course({
       title,
-      description: description || `Course created from YouTube ${sourceType.replace('youtube_', '')}`,
-      sourceType,
-      sourceUrl: youtubeUrl,
-      creator: req.user._id,
+      description,
+      creator: req.user.id,
       category,
-      aiGenerated: true
+      tags: tags || [],
+      thumbnail,
+      isPublic: isPublic !== undefined ? isPublic : true,
+      difficulty: difficulty || 'intermediate'
     });
-
-    await course.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Course created successfully! Processing video content...',
-      data: { 
-        course,
-        processingStatus: 'started'
-      }
-    });
-
-    // TODO: Process videos in background
-    // processYouTubeContent(course._id, youtubeUrl, sourceType);
-
-  } catch (error) {
-    console.error('Create course error:', error);
-    res.status(500).json({
-      error: 'Failed to create course',
-      message: error.message
-    });
-  }
-};
-
-// Get user's courses
-const getUserCourses = async (req, res) => {
-  try {
-    const enrolledCourses = await Course.find({
-      '_id': { $in: req.user.enrolledCourses.map(ec => ec.course) }
-    }).populate('creator', 'username');
-
-    const createdCourses = await Course.find({
-      creator: req.user._id
-    });
-
-    res.json({
-      success: true,
-      data: {
-        enrolled: enrolledCourses,
-        created: createdCourses
-      }
-    });
-  } catch (error) {
-    console.error('Get user courses error:', error);
-    res.status(500).json({
-      error: 'Failed to fetch user courses',
-      message: error.message
-    });
-  }
-};
-
-// Enroll in course
-const enrollInCourse = async (req, res) => {
-  try {
-    const { courseId } = req.params;
     
-    const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({
-        error: 'Course not found',
-        message: 'Course does not exist'
-      });
-    }
-
-    // Check if already enrolled
-    const alreadyEnrolled = req.user.enrolledCourses.some(
-      ec => ec.course.toString() === courseId
+    const course = await newCourse.save();
+    
+    // Add course to user's created courses
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { $push: { createdCourses: course._id } }
     );
-
-    if (alreadyEnrolled) {
-      return res.status(400).json({
-        error: 'Already enrolled',
-        message: 'You are already enrolled in this course'
-      });
-    }
-
-    // Add to user's enrolled courses
-    req.user.enrolledCourses.push({
-      course: courseId,
-      enrolledAt: new Date(),
-      progress: 0
-    });
-
-    await req.user.save();
-
-    // Update course enrollment count
-    course.enrollmentCount += 1;
-    await course.save();
-
-    res.json({
-      success: true,
-      message: 'Successfully enrolled in course!',
-      data: { courseId }
-    });
-  } catch (error) {
-    console.error('Enroll course error:', error);
-    res.status(500).json({
-      error: 'Failed to enroll in course',
-      message: error.message
-    });
+    
+    res.json(course);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
   }
 };
 
-module.exports = {
-  getAllCourses,
-  getCourseById,
-  createCourseFromYoutube,
-  getUserCourses,
-  enrollInCourse
+// Update a course
+exports.updateCourse = async (req, res) => {
+  const { title, description, category, tags, thumbnail, isPublic, difficulty } = req.body;
+  
+  try {
+    let course = await Course.findById(req.params.id);
+    
+    if (!course) {
+      return res.status(404).json({ msg: 'Course not found' });
+    }
+    
+    // Check ownership
+    if (course.creator.toString() !== req.user.id) {
+      return res.status(401).json({ msg: 'User not authorized' });
+    }
+    
+    // Update fields
+    if (title) course.title = title;
+    if (description) course.description = description;
+    if (category) course.category = category;
+    if (tags) course.tags = tags;
+    if (thumbnail) course.thumbnail = thumbnail;
+    if (isPublic !== undefined) course.isPublic = isPublic;
+    if (difficulty) course.difficulty = difficulty;
+    
+    await course.save();
+    
+    res.json(course);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Course not found' });
+    }
+    res.status(500).send('Server error');
+  }
+};
+
+// Delete a course
+exports.deleteCourse = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    
+    if (!course) {
+      return res.status(404).json({ msg: 'Course not found' });
+    }
+    
+    // Check ownership
+    if (course.creator.toString() !== req.user.id) {
+      return res.status(401).json({ msg: 'User not authorized' });
+    }
+    
+    // Delete all videos in the course
+    await Video.deleteMany({ courseId: req.params.id });
+    
+    // Remove course from user's created courses
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { $pull: { createdCourses: req.params.id } }
+    );
+    
+    // Delete the course
+    await course.remove();
+    
+    res.json({ msg: 'Course removed' });
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Course not found' });
+    }
+    res.status(500).send('Server error');
+  }
+};
+
+// Get videos for a course
+exports.getCourseVideos = async (req, res) => {
+  try {
+    const videos = await Video.find({ courseId: req.params.id })
+      .sort({ order: 1 });
+    
+    res.json(videos);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+// Enroll in a course
+exports.enrollCourse = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    
+    if (!course) {
+      return res.status(404).json({ msg: 'Course not found' });
+    }
+    
+    // Check if user is already enrolled
+    const user = await User.findById(req.user.id);
+    if (user.enrolledCourses.includes(req.params.id)) {
+      return res.status(400).json({ msg: 'Already enrolled in this course' });
+    }
+    
+    // Add course to enrolled courses
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { $push: { enrolledCourses: req.params.id } }
+    );
+    
+    // Increment enrollment count
+    course.enrollments += 1;
+    await course.save();
+    
+    res.json({ msg: 'Successfully enrolled' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+// Search courses
+exports.searchCourses = async (req, res) => {
+  const { query, category, difficulty } = req.query;
+  
+  try {
+    let searchQuery = { isPublic: true };
+    
+    if (query) {
+      searchQuery.$text = { $search: query };
+    }
+    
+    if (category) {
+      searchQuery.category = category;
+    }
+    
+    if (difficulty) {
+      searchQuery.difficulty = difficulty;
+    }
+    
+    const courses = await Course.find(searchQuery)
+      .populate('creator', 'name avatar')
+      .sort({ score: { $meta: 'textScore' } });
+    
+    res.json(courses);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
 };
