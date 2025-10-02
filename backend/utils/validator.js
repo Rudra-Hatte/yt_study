@@ -13,6 +13,21 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+// Format validation errors
+exports.formatErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
+// Validate ObjectId
+exports.isValidObjectId = (id) => {
+  const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+  return objectIdPattern.test(id);
+};
+
 // Course validation rules
 const validateCourseCreation = [
   body('youtubeUrl')
