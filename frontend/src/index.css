@@ -23,3 +23,18 @@
     @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500;
   }
 }
+
+/* Add to existing CSS */
+.backface-hidden {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.flip-card {
+  perspective: 1000px;
+}
+
+.perspective {
+  perspective: 1000px;
+}
