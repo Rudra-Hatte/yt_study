@@ -1,169 +1,130 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import toast from 'react-hot-toast';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const from = location.state?.from?.pathname || '/dashboard';
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-
-    const result = await login(formData.email, formData.password);
-    
-    if (result.success) {
-      toast.success('Welcome back! Login successful.');
-      navigate(from, { replace: true });
-    } else {
-      toast.error(result.error || 'Login failed. Please try again.');
+    setIsLoading(true);
+    try {
+      await login(formData.email, formData.password);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setLoading(false);
-  };
-
-  // Quick login for testing
-  const handleDemoLogin = async (email, password) => {
-    setFormData({ email, password });
-    setLoading(true);
-
-    const result = await login(email, password);
-    
-    if (result.success) {
-      toast.success('Demo login successful!');
-      navigate(from, { replace: true });
-    } else {
-      toast.error(result.error || 'Demo login failed.');
-    }
-    
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="h-12 w-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">YT</span>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="p-8 text-center bg-gradient-to-r from-indigo-500 to-purple-600">
+            <motion.div
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h1 className="text-3xl font-bold text-white mb-2">Welcome Back!</h1>
+              <p className="text-indigo-100">Continue your learning journey</p>
+            </motion.div>
           </div>
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-          Welcome back
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-            Sign up here
-          </Link>
-        </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="input-field"
-                  placeholder="you@example.com"
-                />
+          {/* Form */}
+          <div className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </motion.div>
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="input-field"
-                  placeholder="••••••••"
-                />
+              <div>
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </motion.div>
               </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full btn-primary flex justify-center py-3"
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.6 }}
               >
-                {loading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                ) : (
-                  'Sign in'
-                )}
-              </button>
-            </div>
-          </form>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transform transition-all hover:scale-[1.02]"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Signing in...
+                    </div>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+              </motion.div>
+            </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Quick Test Login</span>
-              </div>
-            </div>
-            
-            <div className="mt-4 space-y-3">
-              <div className="text-center text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-                <p className="mb-2 font-medium">Backend Authentication Ready! 🚀</p>
-                <p className="text-xs text-gray-500">Create an account or login with your credentials</p>
-              </div>
-              
-              {/* Quick Demo Button */}
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('test@example.com', 'password123')}
-                disabled={loading}
-                className="w-full text-sm py-2 px-4 border border-gray-300 rounded-md text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-50"
+            <div className="mt-6 text-center">
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="text-sm text-gray-600"
               >
-                {loading ? 'Testing...' : 'Quick Test with Demo Account'}
-              </button>
-              
-              <div className="text-xs text-center text-gray-500">
-                <p>Or register a new account to test the full flow</p>
-              </div>
+                Don't have an account?{' '}
+                <Link
+                  to="/register"
+                  className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                >
+                  Sign up here
+                </Link>
+              </motion.p>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
