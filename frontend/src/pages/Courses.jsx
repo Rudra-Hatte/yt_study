@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
+import { MOCK_COURSES } from '../utils/mockData';
 import SkeletonCourseCard from '../components/SkeletonCourseCard';
 import toast from 'react-hot-toast';
 
 const Courses = () => {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -16,44 +20,47 @@ const Courses = () => {
 
   const fetchCourses = async () => {
     try {
-      // Mock data for now
+      // Mock data with professional thumbnails
       setTimeout(() => {
         setCourses([
           {
             id: 1,
             title: 'Complete React.js Tutorial',
             description: 'Learn React from scratch with this comprehensive tutorial covering hooks, components, and state management.',
-            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            thumbnail: `https://placehold.co/600x400/3b82f6/ffffff?text=${encodeURIComponent('React.js\nMastery')}`,
             duration: '3h 45m',
-            progress: 75,
+            progress: 45,
             totalLessons: 24,
             completedLessons: 18,
             createdAt: '2024-01-15',
-            status: 'in-progress'
+            status: 'in-progress',
+            level: 'Intermediate'
           },
           {
             id: 2,
             title: 'Node.js Backend Development',
             description: 'Build scalable backend applications with Node.js, Express, and MongoDB.',
-            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            thumbnail: `https://placehold.co/600x400/16a34a/ffffff?text=${encodeURIComponent('Node.js\nBackend')}`,
             duration: '5h 20m',
             progress: 45,
             totalLessons: 32,
             completedLessons: 14,
             createdAt: '2024-01-10',
-            status: 'in-progress'
+            status: 'in-progress',
+            level: 'Advanced'
           },
           {
             id: 3,
             title: 'Machine Learning Fundamentals',
             description: 'Introduction to machine learning concepts, algorithms, and practical applications.',
-            thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+            thumbnail: `https://placehold.co/600x400/8b5cf6/ffffff?text=${encodeURIComponent('ML\nFundamentals')}`,
             duration: '8h 15m',
             progress: 100,
-            totalLessons: 45,
-            completedLessons: 45,
+            totalLessons: 1,
+            completedLessons: 1,
             createdAt: '2024-01-05',
-            status: 'completed'
+            status: 'completed',
+            level: 'Advanced'
           }
         ]);
         setLoading(false);
@@ -102,12 +109,20 @@ const Courses = () => {
             <h1 className="text-3xl font-bold text-gray-900">My Courses</h1>
             <p className="text-gray-600 mt-2">Manage your learning journey</p>
           </div>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="mt-4 sm:mt-0 btn-primary"
+          <Link
+            to="/create-course"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            📎 Create New Course
-          </button>
+            <svg 
+              className="-ml-1 mr-2 h-5 w-5" 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 20 20" 
+              fill="currentColor"
+            >
+              <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Create New Course
+          </Link>
         </div>
 
         {/* Create Course Modal */}
@@ -173,41 +188,56 @@ const Courses = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
-              <div key={course.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                <img
-                  src={course.thumbnail}
-                  alt={course.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate">{course.title}</h3>
-                    {getStatusBadge(course.status)}
-                  </div>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm text-gray-500">
-                      <span>{course.duration}</span>
-                      <span>{course.completedLessons}/{course.totalLessons} lessons</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${course.progress}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">{course.progress}% complete</span>
-                      <Link
-                        to={`/courses/${course.id}`}
-                        className="btn-primary text-sm"
-                      >
-                        {course.status === 'completed' ? 'Review' : 'Continue'}
-                      </Link>
+              <motion.div
+                key={course.id}
+                whileHover={{ scale: 1.02, translateY: -4 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-all"
+              >
+                <Link to={`/courses/${course.id}`}>
+                  <div className="relative pb-[56.25%] bg-gradient-to-br from-gray-900 to-gray-800">
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="absolute top-0 left-0 w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                      loading="lazy"
+                    />
+                    <div className="absolute top-2 right-2 px-2 py-1 bg-black bg-opacity-50 rounded-md">
+                      <span className="text-white text-sm font-medium">{course.duration}</span>
                     </div>
                   </div>
-                </div>
-              </div>
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold 
+                        ${course.level === 'Beginner' ? 'bg-green-100 text-green-800' :
+                        course.level === 'Intermediate' ? 'bg-blue-100 text-blue-800' :
+                        'bg-purple-100 text-purple-800'}`}>
+                        {course.level}
+                      </span>
+                      {getStatusBadge(course.status)}
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{course.description}</p>
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex items-center text-sm text-gray-500">
+                        <span>{course.completedLessons}/{course.totalLessons} lessons</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              course.progress === 100 ? 'bg-green-500' :
+                              course.progress > 50 ? 'bg-blue-500' : 'bg-indigo-500'
+                            }`}
+                            style={{ width: `${course.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{course.progress}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
             ))}
           </div>
         )}
