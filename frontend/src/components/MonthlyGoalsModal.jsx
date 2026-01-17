@@ -66,17 +66,17 @@ const MonthlyGoalsModal = ({ isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
           >
-            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-dark-800 rounded-xl sm:rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
               {/* Header */}
-              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl">
+              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-6 rounded-t-xl sm:rounded-t-2xl">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Target className="w-8 h-8" />
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Target className="w-6 h-6 sm:w-8 sm:h-8" />
                     <div>
-                      <h2 className="text-2xl font-bold">Monthly Goals</h2>
-                      <p className="text-purple-100 text-sm">{currentMonth}</p>
+                      <h2 className="text-xl sm:text-2xl font-bold">Monthly Goals</h2>
+                      <p className="text-purple-100 text-xs sm:text-sm">{currentMonth}</p>
                     </div>
                   </div>
                   <button
@@ -104,7 +104,7 @@ const MonthlyGoalsModal = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-3 sm:p-6 space-y-3 sm:space-y-4">
                 {/* Goals List */}
                 <div className="space-y-3">
                   {goals.map((goal, index) => {
