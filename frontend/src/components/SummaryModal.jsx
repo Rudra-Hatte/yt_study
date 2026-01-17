@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingSpinner } from './LoadingSpinner';
 import { AI_SERVICE_URL } from '../config/api';
+import { extractYouTubeCaptions } from '../utils/youtubeCaptions';
+import toast from 'react-hot-toast';
 
 const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
   const [summary, setSummary] = useState(null);
@@ -19,13 +21,21 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
     setError(null);
     
     try {
-      // Call AI service to generate summary from video transcript
+      // Extract captions client-side
+      const transcript = await extractYouTubeCaptions(videoId);
+      
+      if (!transcript || transcript.length < 100) {
+        throw new Error('Could not extract sufficient caption data');
+      }
+      
+      // Send pre-extracted transcript to backend
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/summary`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          transcript: transcript, // Send extracted text
           videoId: videoId,
           title: videoTitle,
           format: 'detailed'

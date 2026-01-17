@@ -4,19 +4,25 @@ const { getVideoTranscript } = require('../utils/youtube');
 // Generate summary from a video
 exports.createSummary = async (req, res, next) => {
   try {
-    const { videoId, format = 'detailed', title } = req.body;
+    const { videoId, transcript, format = 'detailed', title } = req.body;
     
     console.log('📄 Summary generation requested for video:', videoId);
     
-    if (!videoId) {
-      return res.status(400).json({ success: false, error: 'Video ID is required' });
+    // Accept transcript from frontend (browser-extracted) or fall back to server extraction
+    let videoTranscript = transcript;
+    
+    if (!videoTranscript) {
+      console.log('📥 No transcript provided, attempting server-side extraction...');
+      if (!videoId) {
+        return res.status(400).json({ success: false, error: 'Video ID or transcript is required' });
+      }
+      const { getVideoTranscript } = require('../utils/youtube');
+      videoTranscript = await getVideoTranscript(videoId);
+    } else {
+      console.log('✅ Using browser-extracted transcript:', videoTranscript.length, 'characters');
     }
     
-    // Get the video transcript
-    console.log('📥 Fetching transcript...');
-    const transcript = await getVideoTranscript(videoId);
-    
-    if (!transcript || transcript.length < 100) {
+    if (!videoTranscript || videoTranscript.length < 100) {
       console.error('❌ Transcript too short or unavailable');
       return res.status(400).json({ 
         success: false, 
@@ -24,11 +30,9 @@ exports.createSummary = async (req, res, next) => {
       });
     }
     
-    console.log(`✅ Transcript fetched: ${transcript.length} characters`);
-    
     // Generate summary
     console.log('🤖 Generating summary with Gemini...');
-    const summary = await generateSummary(transcript, title || 'YouTube Video', format);
+    const summary = await generateSummary(videoTranscript, title || 'YouTube Video', format);
     
     console.log('✅ Summary generated successfully');
     

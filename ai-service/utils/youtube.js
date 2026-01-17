@@ -1,7 +1,7 @@
 const { YoutubeTranscript } = require('youtube-transcript');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { google } = require('googleapis');
+const ytdl = require('@distube/ytdl-core');
 
 // Method to fetch captions using YouTube's timedtext API (most reliable)
 const getTimedTextCaptions = async (videoId) => {
@@ -90,61 +90,64 @@ const getTimedTextCaptions = async (videoId) => {
   }
 };
 
-// Method to fetch captions using YouTube Data API v3 (most reliable for servers)
-const getYouTubeDataAPICaptions = async (videoId) => {
+// Method to extract captions using ytdl-core (most reliable, uses YouTube's internal API)
+const getYtdlCoreCaptions = async (videoId) => {
   try {
-    console.log('📥 Using YouTube Data API v3 (official API)...');
+    console.log('📥 Using ytdl-core (YouTube internal API)...');
     
-    if (!process.env.YOUTUBE_API_KEY) {
-      throw new Error('YouTube API key not configured');
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    
+    // Get video info with caption tracks
+    const info = await ytdl.getInfo(videoUrl);
+    
+    // Check if captions are available
+    const captionTracks = info.player_response?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    
+    if (!captionTracks || captionTracks.length === 0) {
+      throw new Error('No captions available for this video');
     }
     
-    const youtube = google.youtube({
-      version: 'v3',
-      auth: process.env.YOUTUBE_API_KEY
+    console.log(`📋 Found ${captionTracks.length} caption track(s)`);
+    
+    // Find English caption or use first available
+    let selectedTrack = 
+      captionTracks.find(track => track.languageCode === 'en' && track.kind === 'asr') || // Auto-generated English
+      captionTracks.find(track => track.languageCode === 'en') || // Manual English
+      captionTracks.find(track => track.languageCode.startsWith('en')) || // Any English
+      captionTracks[0]; // First available
+    
+    const trackType = selectedTrack.kind === 'asr' ? '(auto-generated)' : '(manual)';
+    console.log(`✅ Selected: ${selectedTrack.name?.simpleText || selectedTrack.languageCode} ${trackType}`);
+    
+    // Download caption XML
+    const captionUrl = selectedTrack.baseUrl;
+    const response = await axios.get(captionUrl);
+    
+    // Parse XML to extract text
+    const $ = cheerio.load(response.data, { xmlMode: true });
+    const textSegments = [];
+    
+    $('text').each((i, elem) => {
+      const text = $(elem).text()
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\n/g, ' ')
+        .trim();
+      
+      if (text) {
+        textSegments.push(text);
+      }
     });
     
-    // List available captions
-    const captionsList = await youtube.captions.list({
-      videoId: videoId,
-      part: ['snippet']
-    });
+    const fullTranscript = textSegments.join(' ');
+    console.log(`✅ ytdl-core method successful! Length: ${fullTranscript.length} characters`);
     
-    if (!captionsList.data.items || captionsList.data.items.length === 0) {
-      throw new Error('No captions available via YouTube Data API');
-    }
-    
-    console.log(`📋 Found ${captionsList.data.items.length} caption track(s) via API`);
-    
-    // Find English caption
-    let caption = captionsList.data.items.find(c => 
-      c.snippet.language === 'en' || 
-      c.snippet.language.startsWith('en')
-    ) || captionsList.data.items[0];
-    
-    console.log(`✅ Selected caption: ${caption.snippet.name || caption.snippet.language}`);
-    
-    // Download caption content
-    const captionDownload = await youtube.captions.download({
-      id: caption.id,
-      tfmt: 'srt' // SubRip format
-    });
-    
-    // Parse SRT format to extract text
-    const srtContent = captionDownload.data;
-    const textLines = srtContent
-      .split('\n')
-      .filter(line => line.trim() && !line.match(/^\d+$/) && !line.match(/\d{2}:\d{2}:\d{2}/))
-      .join(' ')
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    console.log(`✅ YouTube Data API method successful! Length: ${textLines.length} characters`);
-    return textLines;
-    
+    return fullTranscript;
   } catch (error) {
-    console.log(`⚠️ YouTube Data API method failed: ${error.message}`);
+    console.log(`⚠️ ytdl-core method failed: ${error.message}`);
     throw error;
   }
 };
@@ -153,14 +156,14 @@ const getYouTubeDataAPICaptions = async (videoId) => {
 const getVideoTranscript = async (videoId) => {
   console.log(`🔍 Attempting to fetch transcript for video: ${videoId}`);
   
-  // Method 1: Try YouTube Data API v3 (most reliable for servers)
+  // Method 1: Try ytdl-core (most reliable - uses YouTube's internal API)
   try {
-    const transcript = await getYouTubeDataAPICaptions(videoId);
+    const transcript = await getYtdlCoreCaptions(videoId);
     if (transcript && transcript.length > 100) {
       return transcript;
     }
   } catch (error) {
-    console.log(`⚠️ Method 1 (YouTube Data API) failed: ${error.message}`);
+    console.log(`⚠️ Method 1 (ytdl-core) failed: ${error.message}`);
   }
   
   // Method 2: Try YouTube's native timedtext API (scraping)
@@ -173,32 +176,38 @@ const getVideoTranscript = async (videoId) => {
     console.log(`⚠️ Method 2 (timedtext) failed: ${error.message}`);
   }
   
-  // Method 3: Try youtube-transcript library
+  // Method 3: Try youtube-transcript library (simple, no language specified)
   try {
-    console.log('📥 Method 3: Using youtube-transcript library...');
+    console.log('📥 Method 3: Using youtube-transcript library (auto-detect)...');
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     if (transcript && transcript.length > 0) {
       const fullTranscript = transcript.map(item => item.text).join(' ');
-      console.log(`✅ Success! Transcript length: ${fullTranscript.length} characters`);
+      console.log(`✅ Method 3 Success! Transcript length: ${fullTranscript.length} characters`);
       return fullTranscript;
     }
   } catch (error) {
     console.log(`⚠️ Method 3 failed: ${error.message}`);
-  }
-
-  // Method 4: Try with language parameter variations
-  const languages = ['en', 'en-US', 'en-GB', 'a.en'];
-  for (const lang of languages) {
-    try {
-      console.log(`📥 Method 4: Trying language: ${lang}...`);
-      const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang });
-      if (transcript && transcript.length > 0) {
-        const fullTranscript = transcript.map(item => item.text).join(' ');
-        console.log(`✅ Success with ${lang}! Transcript length: ${fullTranscript.length} characters`);
-        return fullTranscript;
+    
+    // Extract available languages from error message
+    const langMatch = error.message.match(/Available languages: (.+)/);
+    if (langMatch) {
+      const availableLangs = langMatch[1].split(',').map(l => l.trim());
+      console.log(`📋 Detected available languages: ${availableLangs.join(', ')}`);
+      
+      // Try first available language
+      for (const lang of availableLangs) {
+        try {
+          console.log(`📥 Trying detected language: ${lang}...`);
+          const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang });
+          if (transcript && transcript.length > 0) {
+            const fullTranscript = transcript.map(item => item.text).join(' ');
+            console.log(`✅ Success with ${lang}! Transcript length: ${fullTranscript.length} characters`);
+            return fullTranscript;
+          }
+        } catch (err) {
+          console.log(`⚠️ Language ${lang} failed: ${err.message}`);
+        }
       }
-    } catch (error) {
-      console.log(`⚠️ Method 4 (${lang}) failed: ${error.message}`);
     }
   }
   

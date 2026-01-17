@@ -9,6 +9,7 @@ import FlashcardModal from '../components/FlashcardModal';
 import SummaryModal from '../components/SummaryModal';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { AI_SERVICE_URL } from '../config/api';
+import { extractYouTubeCaptions } from '../utils/youtubeCaptions';
 import toast from 'react-hot-toast';
 
 const CourseView = () => {
@@ -43,14 +44,26 @@ const CourseView = () => {
       setGeneratingType('quiz');
       setIsGenerating(true);
       
-      // Call AI service to generate quiz from video transcript
+      const videoId = course.videos[currentVideo].youtubeId;
+      
+      // Extract captions client-side (browser session - bypasses blocks!)
+      toast.loading('Extracting video captions...');
+      const transcript = await extractYouTubeCaptions(videoId);
+      
+      if (!transcript || transcript.length < 100) {
+        throw new Error('Could not extract sufficient caption data');
+      }
+      
+      // Send pre-extracted transcript to backend
+      toast.loading('Generating quiz...');
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/quiz`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          videoId: course.videos[currentVideo].youtubeId,
+          transcript: transcript, // Send extracted text, not videoId
+          videoId: videoId,
           title: course.videos[currentVideo].title,
           numQuestions: 5,
           difficulty: 'medium'
@@ -84,14 +97,26 @@ const CourseView = () => {
       setGeneratingType('flashcards');
       setIsGenerating(true);
       
-      // Call AI service to generate flashcards from video transcript
+      const videoId = course.videos[currentVideo].youtubeId;
+      
+      // Extract captions client-side
+      toast.loading('Extracting video captions...');
+      const transcript = await extractYouTubeCaptions(videoId);
+      
+      if (!transcript || transcript.length < 100) {
+        throw new Error('Could not extract sufficient caption data');
+      }
+      
+      // Send pre-extracted transcript to backend
+      toast.loading('Generating flashcards...');
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/flashcards`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          videoId: course.videos[currentVideo].youtubeId,
+          transcript: transcript, // Send extracted text
+          videoId: videoId,
           title: course.videos[currentVideo].title,
           numCards: 10
         }),

@@ -9,16 +9,17 @@
     "test": "jest"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "@google/generative-ai": "^0.2.0",
     "axios": "^1.6.2",
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "googleapis": "^170.1.0",
     "mongoose": "^8.0.1",
     "youtube-captions-scraper": "^2.0.0",
-    "youtube-transcript": "^1.0.6"
+    "youtube-transcript": "^1.0.6",
+    "ytdl-core": "^4.11.5"
   },
   "devDependencies": {
     "jest": "^29.7.0",
