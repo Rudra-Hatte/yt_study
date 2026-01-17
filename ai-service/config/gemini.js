@@ -1,8 +1,12 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
+const apiKeyRotator = require('./apiKeyRotator');
 
-// Access your API key as an environment variable
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Function to get a new Gemini AI instance with rotated key
+const getGenAI = () => {
+  const apiKey = apiKeyRotator.getGeminiKey();
+  return new GoogleGenerativeAI(apiKey);
+};
 
 // For safety settings
 const safetySettings = [
@@ -26,6 +30,7 @@ const safetySettings = [
 
 // Get Gemini Pro model
 const getGeminiModel = () => {
+  const genAI = getGenAI();
   return genAI.getGenerativeModel({ 
     model: "gemini-2.0-flash",
     safetySettings
@@ -34,6 +39,7 @@ const getGeminiModel = () => {
 
 // Get Gemini Vision model
 const getGeminiVisionModel = () => {
+  const genAI = getGenAI();
   return genAI.getGenerativeModel({ 
     model: "gemini-pro-vision",
     safetySettings
@@ -42,5 +48,6 @@ const getGeminiVisionModel = () => {
 
 module.exports = {
   getGeminiModel,
-  getGeminiVisionModel
+  getGeminiVisionModel,
+  apiKeyRotator
 };

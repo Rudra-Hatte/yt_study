@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const apiKeyRotator = require('../config/apiKeyRotator');
 require('dotenv').config();
 
 module.exports = function (req, res, next) {
@@ -24,12 +25,7 @@ module.exports = function (req, res, next) {
 // Get video info from YouTube API
 exports.getYoutubeInfo = async (videoId) => {
   try {
-    // You'll need to set up a YouTube API key in your .env file
-    const apiKey = process.env.YOUTUBE_API_KEY;
-    
-    if (!apiKey) {
-      throw new Error('YouTube API key not configured');
-    }
+    const apiKey = apiKeyRotator.getYoutubeKey();
     
     const response = await axios.get(`https://www.googleapis.com/youtube/v3/videos`, {
       params: {

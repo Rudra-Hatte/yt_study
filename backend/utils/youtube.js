@@ -1,4 +1,5 @@
 const axios = require('axios');
+const apiKeyRotator = require('../config/apiKeyRotator');
 
 // Extract YouTube video ID from URL
 const extractVideoId = (url) => {
@@ -15,9 +16,7 @@ const extractPlaylistId = (url) => {
 // Get video details from YouTube API
 const getVideoDetails = async (videoId) => {
   try {
-    if (!process.env.YOUTUBE_API_KEY) {
-      throw new Error('YouTube API key not configured');
-    }
+    const youtubeKey = apiKeyRotator.getYoutubeKey();
 
     const response = await axios.get(
       `https://www.googleapis.com/youtube/v3/videos`,
@@ -25,7 +24,7 @@ const getVideoDetails = async (videoId) => {
         params: {
           part: 'snippet,contentDetails,statistics',
           id: videoId,
-          key: process.env.YOUTUBE_API_KEY
+          key: youtubeKey
         }
       }
     );

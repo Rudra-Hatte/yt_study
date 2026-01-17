@@ -1,6 +1,7 @@
 const { YoutubeTranscript } = require('youtube-transcript');
 const axios = require('axios');
 const { getSubtitles } = require('youtube-captions-scraper');
+const apiKeyRotator = require('../config/apiKeyRotator');
 
 /**
  * COMPREHENSIVE YouTube Transcript Extractor
@@ -127,16 +128,14 @@ const getVideoTranscript = async (videoId) => {
 // Get video metadata using YouTube API
 const getVideoMetadata = async (videoId) => {
   try {
-    if (!process.env.YOUTUBE_API_KEY) {
-      throw new Error('YouTube API key not configured');
-    }
+    const youtubeKey = apiKeyRotator.getYoutubeKey();
     
     const response = await axios.get(
       `https://www.googleapis.com/youtube/v3/videos`, {
         params: {
           id: videoId,
           part: 'snippet,contentDetails,statistics',
-          key: process.env.YOUTUBE_API_KEY
+          key: youtubeKey
         }
       }
     );
@@ -166,11 +165,7 @@ const getVideoMetadata = async (videoId) => {
 // Search YouTube videos by query
 const searchYouTubeVideos = async (query, maxResults = 10) => {
   try {
-    if (!process.env.YOUTUBE_API_KEY) {
-      console.warn('YouTube API key not configured, using fallback');
-      // Return empty array if no API key - will be handled by calling function
-      return [];
-    }
+    const youtubeKey = apiKeyRotator.getYoutubeKey();
     
     const response = await axios.get(
       `https://www.googleapis.com/youtube/v3/search`, {
@@ -182,7 +177,7 @@ const searchYouTubeVideos = async (query, maxResults = 10) => {
           order: 'relevance',
           videoDuration: 'medium', // 4-20 minutes
           videoCaption: 'closedCaption', // Only videos with captions
-          key: process.env.YOUTUBE_API_KEY
+          key: youtubeKey
         }
       }
     );

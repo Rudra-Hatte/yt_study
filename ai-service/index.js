@@ -2,16 +2,13 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const aiRoutes = require('./routes');
+const apiKeyRotator = require('./config/apiKeyRotator');
 
 const app = express();
 
-// Validate environment variables
-if (!process.env.GEMINI_API_KEY) {
-  console.error('❌ GEMINI_API_KEY is not set in environment variables!');
-  console.log('Please set GEMINI_API_KEY in your .env file');
-} else {
-  console.log('✅ GEMINI_API_KEY is configured');
-}
+// Validate API keys are loaded
+console.log('🔑 API Key Rotation System Initialized');
+console.log(apiKeyRotator.getStats());
 
 // Middleware
 const allowedOrigins = process.env.FRONTEND_URL 

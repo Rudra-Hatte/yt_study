@@ -1,6 +1,11 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const apiKeyRotator = require('../config/apiKeyRotator');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Function to get Gemini AI with rotated key
+const getGenAI = () => {
+  const apiKey = apiKeyRotator.getGeminiKey();
+  return new GoogleGenerativeAI(apiKey);
+};
 
 // Chat with AI Study Buddy
 exports.chatWithAI = async (req, res, next) => {
@@ -13,14 +18,8 @@ exports.chatWithAI = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Message is required' });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY is not set');
-      return res.status(500).json({ 
-        success: false, 
-        error: 'AI service configuration error. Please check API key.' 
-      });
-    }
-
+    // Get Gemini instance with rotated key
+    const genAI = getGenAI();
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     // Create context-aware prompt
