@@ -35,6 +35,9 @@ ChartJS.register(
 const Dashboard = () => {
   const { user } = useAuth();
   const { courses } = useCourses();
+  
+  console.log('Dashboard rendering, user:', user ? 'logged in' : 'not logged in');
+  
   const [dashboardData, setDashboardData] = useState({
     stats: {
       totalCourses: 0,
@@ -83,16 +86,28 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       // Load data in background without showing loading state
-      fetchDashboardData();
-      fetchLearningProfile();
+      fetchDashboardData().catch(err => {
+        console.error('Dashboard data fetch failed:', err);
+        // Continue rendering with empty state
+      });
+      fetchLearningProfile().catch(err => {
+        console.error('Learning profile fetch failed:', err);
+        // Generate recommendations with default profile
+        generatePersonalizedRecommendations(learningProfile);
+      });
     }
   }, [user]);
 
   const fetchDashboardData = async () => {
-    if (!user?.token) return;
+    if (!user?.token) {
+      console.log('No user token available');
+      return;
+    }
     
     // No loading state - show animations immediately
     try {
+      console.log('Fetching dashboard data from:', API_URL);
+      
       // Fetch user's enrolled courses
       const coursesResponse = await fetch(`${API_URL}/api/courses/enrolled`, {
         headers: {
@@ -171,16 +186,24 @@ const Dashboard = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Keep the initial empty state with animations
+      console.log('Continuing with default empty state');
+      // Dashboard will render with empty state and animations
     }
   };
 
   // Fetch personalized learning profile
   const fetchLearningProfile = async () => {
+    if (!user?.token) {
+      console.log('No user token, using default learning profile');
+      generatePersonalizedRecommendations(learningProfile);
+      return;
+    }
+    
     try {
-      const response = await fetch('/api/users/learning-profile', {
+      console.log('Fetching learning profile');
+      const response = await fetch(`${API_URL}/api/users/learning-profile`, {
         headers: {
-          'Authorization': `Bearer ${user?.token}`
+          'Authorization': `Bearer ${user.token}`
         }
       });
       if (response.ok) {
@@ -188,11 +211,13 @@ const Dashboard = () => {
         setLearningProfile(profile);
         generatePersonalizedRecommendations(profile);
       } else {
+        console.log('Learning profile not found, using defaults');
         // Generate recommendations with default profile
         generatePersonalizedRecommendations(learningProfile);
       }
     } catch (error) {
       console.error('Error fetching learning profile:', error);
+      console.log('Using default learning profile');
       // Generate recommendations with default profile
       generatePersonalizedRecommendations(learningProfile);
     }
@@ -292,6 +317,21 @@ const Dashboard = () => {
       timestamp: '2 weeks ago'
     }
   ];
+
+  // Safety check - should never happen with ProtectedRoute, but just in case
+  if (!user) {
+    console.log('Dashboard: No user found, returning loading state');
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Dashboard: Rendering main content');
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-8">
