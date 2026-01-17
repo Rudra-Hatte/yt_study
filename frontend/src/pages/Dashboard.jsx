@@ -66,7 +66,7 @@ const Dashboard = () => {
       }]
     }
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [learningProfile, setLearningProfile] = useState({
     pace: 'medium', // slow, medium, fast
     style: 'visual', // visual, auditory, reading, kinesthetic
@@ -82,6 +82,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) {
+      // Load data in background without showing loading state
       fetchDashboardData();
       fetchLearningProfile();
     }
@@ -90,7 +91,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     if (!user?.token) return;
     
-    setIsLoading(true);
+    // No loading state - show animations immediately
     try {
       // Fetch user's enrolled courses
       const coursesResponse = await fetch(`${API_URL}/api/courses/enrolled`, {
@@ -170,9 +171,7 @@ const Dashboard = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Keep the initial empty state
-    } finally {
-      setIsLoading(false);
+      // Keep the initial empty state with animations
     }
   };
 
@@ -321,11 +320,7 @@ const Dashboard = () => {
             className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Total Courses</h3>
-            {isLoading ? (
-              <div className="text-3xl font-bold mt-2">
-                <div className="h-10 w-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-dark-700 dark:via-dark-600 dark:to-dark-700 rounded-lg animate-shimmer bg-[length:200%_100%]"></div>
-              </div>
-            ) : dashboardData.stats.totalCourses === 0 ? (
+            {dashboardData.stats.totalCourses === 0 ? (
               <motion.p
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
@@ -346,11 +341,7 @@ const Dashboard = () => {
             className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Completed</h3>
-            {isLoading ? (
-              <div className="text-3xl font-bold mt-2">
-                <div className="h-10 w-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-dark-700 dark:via-dark-600 dark:to-dark-700 rounded-lg animate-shimmer bg-[length:200%_100%]"></div>
-              </div>
-            ) : dashboardData.stats.completedCourses === 0 ? (
+            {dashboardData.stats.completedCourses === 0 ? (
               <motion.p
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ repeat: Infinity, duration: 2, delay: 0.2 }}
@@ -371,11 +362,7 @@ const Dashboard = () => {
             className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Study Time</h3>
-            {isLoading ? (
-              <div className="text-3xl font-bold mt-2">
-                <div className="h-10 w-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-dark-700 dark:via-dark-600 dark:to-dark-700 rounded-lg animate-shimmer bg-[length:200%_100%]"></div>
-              </div>
-            ) : dashboardData.stats.totalStudyTime === 0 ? (
+            {dashboardData.stats.totalStudyTime === 0 ? (
               <motion.p
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ repeat: Infinity, duration: 2, delay: 0.4 }}
@@ -396,11 +383,7 @@ const Dashboard = () => {
             className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Study Streak</h3>
-            {isLoading ? (
-              <div className="text-3xl font-bold mt-2">
-                <div className="h-10 w-24 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-dark-700 dark:via-dark-600 dark:to-dark-700 rounded-lg animate-shimmer bg-[length:200%_100%]"></div>
-              </div>
-            ) : dashboardData.stats.streak === 0 ? (
+            {dashboardData.stats.streak === 0 ? (
               <motion.p
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
@@ -424,7 +407,7 @@ const Dashboard = () => {
             className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Weekly Progress</h3>
-            {!isLoading && dashboardData.learningProgress.datasets[0].data.every(val => val === 0) ? (
+            {dashboardData.learningProgress.datasets[0].data.every(val => val === 0) ? (
               <div className="relative h-64 flex items-center justify-center">
                 {/* Placeholder Chart Background */}
                 <div className="absolute inset-0 flex items-end justify-around px-8 pb-12">
@@ -467,7 +450,7 @@ const Dashboard = () => {
             className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Course Completion</h3>
-            {!isLoading && dashboardData.completionRate.datasets[0].data.every(val => val === 0) ? (
+            {dashboardData.completionRate.datasets[0].data.every(val => val === 0) ? (
               <div className="relative h-64 flex items-center justify-center">
                 {/* Animated Placeholder Doughnut */}
                 <div className="relative w-48 h-48">
