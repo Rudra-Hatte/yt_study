@@ -10,6 +10,7 @@ import SummaryModal from '../components/SummaryModal';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { AI_SERVICE_URL } from '../config/api';
 import { extractYouTubeCaptions } from '../utils/youtubeCaptions';
+import { transcribeWithUserHelp } from '../utils/speechToText';
 import toast from 'react-hot-toast';
 
 const CourseView = () => {
@@ -47,25 +48,133 @@ const CourseView = () => {
       const videoId = course.videos[currentVideo].youtubeId;
       let transcript = null;
       
-      // Try browser-side extraction first
+      // Method 1: Try browser-side caption extraction
       try {
         toast.loading('Extracting captions from browser...');
         transcript = await extractYouTubeCaptions(videoId);
         console.log('✅ Browser extraction successful');
       } catch (browserError) {
-        console.log('⚠️ Browser extraction failed, letting backend handle it');
-        // Continue without transcript - backend will extract
+        console.log('⚠️ Browser extraction failed, trying server-side...');
+        
+        // Method 2: Try server-side extraction
+        try {
+          toast.loading('Trying server extraction...');
+          const response = await fetch(`${AI_SERVICE_URL}/api/ai/quiz`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              videoId: videoId,
+              title: course.videos[currentVideo].title,
+              numQuestions: 5,
+              difficulty: 'medium'
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              setCurrentQuiz(result.data);
+              setShowQuiz(true);
+              toast.success('Quiz generated successfully!');
+              return;
+            }
+          }
+        } catch (serverError) {
+          console.log('⚠️ Server extraction also failed');
+        }
+        
+        // Method 3: ULTIMATE FALLBACK - Speech-to-Text
+        toast.dismiss();
+        const useSpeechToText = window.confirm(
+          '⚠️ Caption extraction failed!\n\n' +
+          '🎤 Would you like to use speech-to-text instead?\n\n' +
+          'Instructions:\n' +
+          '1. Click OK\n' +
+          '2. Play the video with sound\n' +
+          '3. Wait for transcription to complete\n\n' +
+          'Note: Your browser will ask for microphone permission.'
+        );
+        
+        if (useSpeechToText) {
+          toast.loading('Starting speech recognition... Please play the video!');
+          
+          transcript = await transcribeWithUserHelp(
+            (progress) => {
+              console.log(`Transcription progress: ${progress}%`);
+            },
+            (status) => {
+              toast.loading(status);
+         Method 1: Try browser-side caption extraction
+      try {
+        toast.loading('Extracting captions from browser...');
+        transcript = await extractYouTubeCaptions(videoId);
+        console.log('✅ Browser extraction successful');
+      } catch (browserError) {
+        console.log('⚠️ Browser extraction failed, trying server-side...');
+        
+        // Method 2: Try server-side extraction
+        try {
+          toast.loading('Trying server extraction...');
+          const response = await fetch(`${AI_SERVICE_URL}/api/ai/flashcards`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              videoId: videoId,
+              title: course.videos[currentVideo].title,
+              numCards: 10
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              setCurrentFlashcards(result.data);
+              setShowFlashcards(true);
+              toast.success('Flashcards generated successfully!');
+              return;
+            }
+          }
+        } catch (serverError) {
+          console.log('⚠️ Server extraction also failed');
+        }
+        
+        // Method 3: ULTIMATE FALLBACK - Speech-to-Text
+        toast.dismiss();
+        const useSpeechToText = window.confirm(
+          '⚠️ Caption extraction failed!\n\n' +
+          '🎤 Would you like to use speech-to-text instead?\n\n' +
+          'Instructions:\n' +
+          '1. Click OK\n' +
+          '2. Play the video with sound\n' +
+          '3. Wait for transcription to complete\n\n' +
+          'Note: Your browser will ask for microphone permission.'
+        );
+        
+        if (useSpeechToText) {
+          toast.loading('Starting speech recognition... Please play the video!');
+          
+          transcript = await transcribeWithUserHelp(
+            (progress) => console.log(`Transcription progress: ${progress}%`),
+            (status) => toast.loading(status)
+          );
+          
+          console.log('✅ Speech-to-text transcription successful!');
+          toast.success('Transcription complete!');
+        } else {
+          throw new Error('All transcription methods failed or cancelled');
+        }
       }
       
-      // Send to backend (with or without pre-extracted transcript)
-      toast.loading('Generating quiz...');
+      // Send to backend with transcript
+      toast.loading('Generating flashcards from transcript
+      toast.loading('Generating quiz from transcript...');
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/quiz`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          transcript: transcript, // May be null - backend will handle
+          transcript: transcript,
           videoId: videoId,
           title: course.videos[currentVideo].title,
           numQuestions: 5,
@@ -88,7 +197,7 @@ const CourseView = () => {
       }
     } catch (error) {
       console.error('Error generating quiz:', error);
-      toast.error('Failed to generate quiz. Please try again.');
+      toast.error(error.message || 'Failed to generate quiz. Please try again.');
     } finally {
       setIsGenerating(false);
       setGeneratingType(null);
