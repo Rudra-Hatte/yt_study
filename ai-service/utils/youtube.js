@@ -1,6 +1,7 @@
 const { YoutubeTranscript } = require('youtube-transcript');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { google } = require('googleapis');
 
 // Method to fetch captions using YouTube's timedtext API (most reliable)
 const getTimedTextCaptions = async (videoId) => {
@@ -89,23 +90,92 @@ const getTimedTextCaptions = async (videoId) => {
   }
 };
 
+// Method to fetch captions using YouTube Data API v3 (most reliable for servers)
+const getYouTubeDataAPICaptions = async (videoId) => {
+  try {
+    console.log('📥 Using YouTube Data API v3 (official API)...');
+    
+    if (!process.env.YOUTUBE_API_KEY) {
+      throw new Error('YouTube API key not configured');
+    }
+    
+    const youtube = google.youtube({
+      version: 'v3',
+      auth: process.env.YOUTUBE_API_KEY
+    });
+    
+    // List available captions
+    const captionsList = await youtube.captions.list({
+      videoId: videoId,
+      part: ['snippet']
+    });
+    
+    if (!captionsList.data.items || captionsList.data.items.length === 0) {
+      throw new Error('No captions available via YouTube Data API');
+    }
+    
+    console.log(`📋 Found ${captionsList.data.items.length} caption track(s) via API`);
+    
+    // Find English caption
+    let caption = captionsList.data.items.find(c => 
+      c.snippet.language === 'en' || 
+      c.snippet.language.startsWith('en')
+    ) || captionsList.data.items[0];
+    
+    console.log(`✅ Selected caption: ${caption.snippet.name || caption.snippet.language}`);
+    
+    // Download caption content
+    const captionDownload = await youtube.captions.download({
+      id: caption.id,
+      tfmt: 'srt' // SubRip format
+    });
+    
+    // Parse SRT format to extract text
+    const srtContent = captionDownload.data;
+    const textLines = srtContent
+      .split('\n')
+      .filter(line => line.trim() && !line.match(/^\d+$/) && !line.match(/\d{2}:\d{2}:\d{2}/))
+      .join(' ')
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    console.log(`✅ YouTube Data API method successful! Length: ${textLines.length} characters`);
+    return textLines;
+    
+  } catch (error) {
+    console.log(`⚠️ YouTube Data API method failed: ${error.message}`);
+    throw error;
+  }
+};
+
 // Extract transcript from YouTube video with multiple fallback methods
 const getVideoTranscript = async (videoId) => {
   console.log(`🔍 Attempting to fetch transcript for video: ${videoId}`);
   
-  // Method 1: Try YouTube's native timedtext API (most reliable)
+  // Method 1: Try YouTube Data API v3 (most reliable for servers)
+  try {
+    const transcript = await getYouTubeDataAPICaptions(videoId);
+    if (transcript && transcript.length > 100) {
+      return transcript;
+    }
+  } catch (error) {
+    console.log(`⚠️ Method 1 (YouTube Data API) failed: ${error.message}`);
+  }
+  
+  // Method 2: Try YouTube's native timedtext API (scraping)
   try {
     const transcript = await getTimedTextCaptions(videoId);
     if (transcript && transcript.length > 100) {
       return transcript;
     }
   } catch (error) {
-    console.log(`⚠️ Method 1 (timedtext) failed: ${error.message}`);
+    console.log(`⚠️ Method 2 (timedtext) failed: ${error.message}`);
   }
   
-  // Method 2: Try youtube-transcript library
+  // Method 3: Try youtube-transcript library
   try {
-    console.log('📥 Method 2: Using youtube-transcript library...');
+    console.log('📥 Method 3: Using youtube-transcript library...');
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     if (transcript && transcript.length > 0) {
       const fullTranscript = transcript.map(item => item.text).join(' ');
@@ -113,14 +183,14 @@ const getVideoTranscript = async (videoId) => {
       return fullTranscript;
     }
   } catch (error) {
-    console.log(`⚠️ Method 2 failed: ${error.message}`);
+    console.log(`⚠️ Method 3 failed: ${error.message}`);
   }
 
-  // Method 3: Try with language parameter variations
+  // Method 4: Try with language parameter variations
   const languages = ['en', 'en-US', 'en-GB', 'a.en'];
   for (const lang of languages) {
     try {
-      console.log(`📥 Method 3: Trying language: ${lang}...`);
+      console.log(`📥 Method 4: Trying language: ${lang}...`);
       const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang });
       if (transcript && transcript.length > 0) {
         const fullTranscript = transcript.map(item => item.text).join(' ');
@@ -128,7 +198,7 @@ const getVideoTranscript = async (videoId) => {
         return fullTranscript;
       }
     } catch (error) {
-      console.log(`⚠️ Method 3 (${lang}) failed: ${error.message}`);
+      console.log(`⚠️ Method 4 (${lang}) failed: ${error.message}`);
     }
   }
   
