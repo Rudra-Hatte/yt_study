@@ -36,7 +36,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { courses } = useCourses();
   
-  console.log('Dashboard rendering, user:', user ? 'logged in' : 'not logged in');
+  console.log('Dashboard rendering, user:', user ? `${user.name || 'Unknown'} (token: ${user.token ? 'yes' : 'NO'})` : 'not logged in');
   
   const [dashboardData, setDashboardData] = useState({
     stats: {

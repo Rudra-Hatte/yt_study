@@ -52,14 +52,17 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Login error:', error);
       // Mock login for development
+      const mockToken = 'mock-jwt-token-' + Date.now();
       const mockUser = {
         id: 1,
-        name: 'John Doe',
+        name: email.split('@')[0], // Use email username as name
         email: email,
-        avatar: 'https://via.placeholder.com/40'
+        avatar: 'https://via.placeholder.com/40',
+        token: mockToken // Include token for API calls
       };
       setUser(mockUser);
       localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('token', mockToken);
       return { success: true };
     }
   };
@@ -95,14 +98,17 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Registration error:', error);
       // Mock registration for development
+      const mockToken = 'mock-jwt-token-' + Date.now();
       const mockUser = {
         id: Math.floor(Math.random() * 1000),
         name: name,
         email: email,
-        avatar: 'https://via.placeholder.com/40'
+        avatar: 'https://via.placeholder.com/40',
+        token: mockToken // Include token for API calls
       };
       setUser(mockUser);
       localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('token', mockToken);
       return { success: true };
     }
   };
