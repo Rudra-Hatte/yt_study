@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext_simple';
@@ -9,6 +9,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +22,9 @@ const Login = () => {
       const result = await login(formData.email, formData.password);
       if (result.success) {
         toast.success('Welcome back!');
-        navigate('/dashboard'); // Navigate to dashboard after successful login
+        // Redirect to the page they tried to access, or dashboard
+        const from = location.state?.from?.pathname || '/dashboard';
+        navigate(from, { replace: true });
       } else {
         toast.error(result.error || 'Login failed');
       }
