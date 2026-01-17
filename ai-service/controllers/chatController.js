@@ -7,11 +7,21 @@ exports.chatWithAI = async (req, res, next) => {
   try {
     const { message, context, courseId } = req.body;
     
+    console.log('Chat request received:', { message, context, courseId });
+    
     if (!message) {
       return res.status(400).json({ success: false, error: 'Message is required' });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY is not set');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'AI service configuration error. Please check API key.' 
+      });
+    }
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     // Create context-aware prompt
     let systemPrompt = `You are an AI Study Buddy - a helpful, encouraging, and knowledgeable learning assistant. Your role is to help students learn effectively by:
@@ -40,9 +50,12 @@ Context: ${context || 'General study help'}
 
     const prompt = `${systemPrompt}\n\nStudent question: ${message}\n\nProvide a helpful response:`;
 
+    console.log('Calling Gemini API...');
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const aiResponse = response.text();
+    
+    console.log('Gemini response received successfully');
 
     res.json({ 
       success: true, 
@@ -54,6 +67,12 @@ Context: ${context || 'General study help'}
 
   } catch (error) {
     console.error('AI Chat error:', error);
-    next(error);
+    console.error('Error stack:', error.stack);
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate response',
+      details: error.message
+    });
   }
 };

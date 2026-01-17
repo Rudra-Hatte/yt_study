@@ -5,10 +5,20 @@ const aiRoutes = require('./routes');
 
 const app = express();
 
+// Validate environment variables
+if (!process.env.GEMINI_API_KEY) {
+  console.error('❌ GEMINI_API_KEY is not set in environment variables!');
+  console.log('Please set GEMINI_API_KEY in your .env file');
+} else {
+  console.log('✅ GEMINI_API_KEY is configured');
+}
+
 // Middleware
 const allowedOrigins = process.env.FRONTEND_URL 
   ? [process.env.FRONTEND_URL, process.env.BACKEND_URL, 'http://localhost:5173', 'http://localhost:5000']
   : ['http://localhost:5173', 'http://localhost:5000'];
+
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
 
 app.use(cors({
   origin: allowedOrigins,

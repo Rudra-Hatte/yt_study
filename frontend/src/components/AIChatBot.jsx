@@ -28,11 +28,12 @@ const AIChatBot = () => {
     setIsLoading(true);
 
     try {
+      console.log('Sending message to AI service:', AI_SERVICE_URL);
+      
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           message: userMessage,
@@ -40,23 +41,42 @@ const AIChatBot = () => {
         })
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
 
-      if (data.success && data.data) {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (data.success && data.data && data.data.response) {
         setMessages(prev => [...prev, { type: 'bot', text: data.data.response }]);
-      } else {
-        // Fallback response
+      } else if (data.error) {
+        console.error('API Error:', data.error);
         setMessages(prev => [...prev, { 
           type: 'bot', 
-          text: "I'm having trouble connecting right now. Try asking about course content, study tips, or learning strategies!" 
+          text: "I'm having trouble processing your question. Please try rephrasing it!" 
+        }]);
+      } else {
+        console.error('Unexpected response format:', data);
+        setMessages(prev => [...prev, { 
+          type: 'bot', 
+          text: "I received an unexpected response. Please try again!" 
         }]);
       }
     } catch (error) {
       console.error('Chat error:', error);
-      // Fallback response
+      console.error('Error details:', {
+        message: error.message,
+        AI_SERVICE_URL,
+        userMessage
+      });
+      
+      // Show specific error message
       setMessages(prev => [...prev, { 
         type: 'bot', 
-        text: "I'm having some technical difficulties. You can still browse courses and use other features while I get back online!" 
+        text: `Connection error: ${error.message}. Please make sure the AI service is running.` 
       }]);
     } finally {
       setIsLoading(false);
