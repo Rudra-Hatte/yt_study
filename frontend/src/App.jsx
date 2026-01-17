@@ -20,8 +20,8 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center transition-colors duration-200">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
       </div>
     );
   }
@@ -30,7 +30,7 @@ function App() {
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <CourseProvider>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors duration-200">
             <Navbar />
             <main className="w-full">
               <AppRoutes />
@@ -40,6 +40,7 @@ function App() {
               position="top-center"
               toastOptions={{
                 duration: 4000,
+                className: 'dark:bg-dark-800 dark:text-gray-100',
                 style: {
                   background: '#363636',
                   color: '#fff',

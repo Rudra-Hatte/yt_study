@@ -11,6 +11,7 @@ import LoadingOverlay from '../components/LoadingOverlay';
 import { AI_SERVICE_URL } from '../config/api';
 import { extractYouTubeCaptions } from '../utils/youtubeCaptions';
 import { transcribeWithUserHelp } from '../utils/speechToText';
+import { FileText, CreditCard, ClipboardCheck, Play, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CourseView = () => {
@@ -129,9 +130,9 @@ const CourseView = () => {
       try {
         toast.loading('Extracting captions from browser...');
         transcript = await extractYouTubeCaptions(videoId);
-        console.log('G£à Browser extraction successful');
+        console.log('Gï¿½ï¿½ Browser extraction successful');
       } catch (browserError) {
-        console.log('GÜán+Å Browser extraction failed, letting backend handle it');
+        console.log('Gï¿½ï¿½n+ï¿½ Browser extraction failed, letting backend handle it');
       }
       
       // Send to backend
@@ -201,7 +202,7 @@ const CourseView = () => {
                     onClick={handleGenerateQuiz}
                     className="py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
                   >
-                    <span className="mr-2">=ƒô¥</span>
+                    <span className="mr-2">=ï¿½ï¿½ï¿½</span>
                     Take Quiz
                   </motion.button>
                   <motion.button
@@ -210,7 +211,7 @@ const CourseView = () => {
                     onClick={handleGenerateFlashcards}
                     className="py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
                   >
-                    <span className="mr-2">=ƒÄ¦</span>
+                    <span className="mr-2">=ï¿½Ä¦</span>
                     Study Flashcards
                   </motion.button>
                   <motion.button
@@ -219,7 +220,7 @@ const CourseView = () => {
                     onClick={handleGenerateSummary}
                     className="py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
                   >
-                    <span className="mr-2">=ƒôï</span>
+                    <span className="mr-2">=ï¿½ï¿½ï¿½</span>
                     Summarize
                   </motion.button>
                 </div>
@@ -256,7 +257,7 @@ const CourseView = () => {
                   >
                     <div className="mr-4 flex-shrink-0">
                       {video.completed ? (
-                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-green-100 text-green-600">G£ô</span>
+                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-green-100 text-green-600">Gï¿½ï¿½</span>
                       ) : (
                         <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-600">{index + 1}</span>
                       )}
