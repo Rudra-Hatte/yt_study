@@ -11,7 +11,7 @@ exports.chatWithAI = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Message is required' });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-thinking-exp-01-21' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     // Create context-aware prompt
     let systemPrompt = `You are an AI Study Buddy - a helpful, encouraging, and knowledgeable learning assistant. Your role is to help students learn effectively by:
