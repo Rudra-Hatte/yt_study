@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext_simple';
 import { useCourses } from '../contexts/CourseContext';
 import LearningProfileModal from '../components/LearningProfileModal';
-import { Settings, Sprout, Rocket, Eye, Headphones, Target, Zap, Trophy, Medal, Award as AwardIcon } from 'lucide-react';
+import { Settings, Sprout, Rocket, Eye, Headphones, Target, Zap, Trophy, Medal, Award as AwardIcon, TrendingUp } from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(
@@ -318,45 +318,101 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Total Courses</h3>
-            <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
-              {isLoading ? '-' : dashboardData.stats.totalCourses}
-            </p>
+            {isLoading ? (
+              <div className="text-3xl font-bold mt-2">
+                <div className="h-10 w-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-dark-700 dark:via-dark-600 dark:to-dark-700 rounded-lg animate-shimmer bg-[length:200%_100%]"></div>
+              </div>
+            ) : dashboardData.stats.totalCourses === 0 ? (
+              <motion.p
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2"
+              >
+                0
+              </motion.p>
+            ) : (
+              <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
+                {dashboardData.stats.totalCourses}
+              </p>
+            )}
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Enrolled courses</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Completed</h3>
-            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-              {isLoading ? '-' : dashboardData.stats.completedCourses}
-            </p>
+            {isLoading ? (
+              <div className="text-3xl font-bold mt-2">
+                <div className="h-10 w-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-dark-700 dark:via-dark-600 dark:to-dark-700 rounded-lg animate-shimmer bg-[length:200%_100%]"></div>
+              </div>
+            ) : dashboardData.stats.completedCourses === 0 ? (
+              <motion.p
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ repeat: Infinity, duration: 2, delay: 0.2 }}
+                className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2"
+              >
+                0
+              </motion.p>
+            ) : (
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
+                {dashboardData.stats.completedCourses}
+              </p>
+            )}
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Finished courses</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Study Time</h3>
-            <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
-              {isLoading ? '-' : `${(dashboardData.stats.totalStudyTime / 60).toFixed(1)}h`}
-            </p>
+            {isLoading ? (
+              <div className="text-3xl font-bold mt-2">
+                <div className="h-10 w-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-dark-700 dark:via-dark-600 dark:to-dark-700 rounded-lg animate-shimmer bg-[length:200%_100%]"></div>
+              </div>
+            ) : dashboardData.stats.totalStudyTime === 0 ? (
+              <motion.p
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ repeat: Infinity, duration: 2, delay: 0.4 }}
+                className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2"
+              >
+                0h
+              </motion.p>
+            ) : (
+              <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
+                {`${(dashboardData.stats.totalStudyTime / 60).toFixed(1)}h`}
+              </p>
+            )}
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Total hours studied</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Study Streak</h3>
-            <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">
-              {isLoading ? '-' : `${dashboardData.stats.streak} days`}
-            </p>
+            {isLoading ? (
+              <div className="text-3xl font-bold mt-2">
+                <div className="h-10 w-24 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-dark-700 dark:via-dark-600 dark:to-dark-700 rounded-lg animate-shimmer bg-[length:200%_100%]"></div>
+              </div>
+            ) : dashboardData.stats.streak === 0 ? (
+              <motion.p
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
+                className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2"
+              >
+                0 days
+              </motion.p>
+            ) : (
+              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">
+                {`${dashboardData.stats.streak} days`}
+              </p>
+            )}
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Current streak</p>
           </motion.div>
         </div>
@@ -365,18 +421,130 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Weekly Progress</h3>
-            <Line data={dashboardData.learningProgress} options={{ responsive: true }} />
+            {!isLoading && dashboardData.learningProgress.datasets[0].data.every(val => val === 0) ? (
+              <div className="relative h-64 flex items-center justify-center">
+                {/* Placeholder Chart Background */}
+                <div className="absolute inset-0 flex items-end justify-around px-8 pb-12">
+                  {[30, 50, 40, 60, 45, 70, 55].map((height, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ height: 0, opacity: 0.3 }}
+                      animate={{ height: `${height}%`, opacity: [0.3, 0.5, 0.3] }}
+                      transition={{
+                        height: { duration: 1, delay: i * 0.1 },
+                        opacity: { repeat: Infinity, duration: 2, delay: i * 0.1 }
+                      }}
+                      className="w-8 bg-gradient-to-t from-indigo-200 to-indigo-400 dark:from-indigo-900/40 dark:to-indigo-600/40 rounded-t-lg"
+                    />
+                  ))}
+                </div>
+                {/* Empty State Message */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="relative z-10 text-center"
+                >
+                  <motion.div
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ repeat: Infinity, duration: 3 }}
+                  >
+                    <TrendingUp className="w-12 h-12 text-indigo-400 dark:text-indigo-500 mx-auto mb-3" />
+                  </motion.div>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">Start learning to see your progress!</p>
+                </motion.div>
+              </div>
+            ) : (
+              <Line data={dashboardData.learningProgress} options={{ responsive: true }} />
+            )}
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 relative"
           >
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Course Completion</h3>
-            <Doughnut data={dashboardData.completionRate} options={{ responsive: true }} />
+            {!isLoading && dashboardData.completionRate.datasets[0].data.every(val => val === 0) ? (
+              <div className="relative h-64 flex items-center justify-center">
+                {/* Animated Placeholder Doughnut */}
+                <div className="relative w-48 h-48">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+                    className="absolute inset-0"
+                  >
+                    <svg viewBox="0 0 100 100" className="w-full h-full">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="url(#gradient1)"
+                        strokeWidth="12"
+                        strokeDasharray="80 170"
+                        opacity="0.3"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="url(#gradient2)"
+                        strokeWidth="12"
+                        strokeDasharray="60 190"
+                        strokeDashoffset="80"
+                        opacity="0.3"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="url(#gradient3)"
+                        strokeWidth="12"
+                        strokeDasharray="110 140"
+                        strokeDashoffset="140"
+                        opacity="0.3"
+                      />
+                      <defs>
+                        <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="rgb(34, 197, 94)" />
+                          <stop offset="100%" stopColor="rgb(34, 197, 94, 0.5)" />
+                        </linearGradient>
+                        <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="rgb(99, 102, 241)" />
+                          <stop offset="100%" stopColor="rgb(99, 102, 241, 0.5)" />
+                        </linearGradient>
+                        <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="rgb(229, 231, 235)" />
+                          <stop offset="100%" stopColor="rgb(229, 231, 235, 0.5)" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </motion.div>
+                </div>
+                {/* Empty State Message */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="absolute text-center"
+                >
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ repeat: Infinity, duration: 4 }}
+                  >
+                    <Target className="w-12 h-12 text-indigo-400 dark:text-indigo-500 mx-auto mb-3" />
+                  </motion.div>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">Enroll to track completion!</p>
+                </motion.div>
+              </div>
+            ) : (
+              <Doughnut data={dashboardData.completionRate} options={{ responsive: true }} />
+            )}
           </motion.div>
         </div>
 
