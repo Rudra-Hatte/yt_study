@@ -145,13 +145,13 @@ const Navbar = () => {
                   <div className="flex-shrink-0">
                     <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
                       <span className="text-white font-medium text-lg">
-                        {user.name.charAt(0).toUpperCase()}
+                        {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                       </span>
                     </div>
                   </div>
                   <div className="ml-3">
-                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">{user.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">{user?.name || 'User'}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{user?.email || ''}</div>
                   </div>
                 </div>
                 

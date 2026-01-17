@@ -20,6 +20,15 @@ const ProfileDropdown = () => {
     completedCourses: 3
   };
 
+  // Don't render if no user
+  if (!user) return null;
+
+  // Get user initials safely
+  const getUserInitial = () => {
+    if (!user?.name) return 'U';
+    return user.name.charAt(0).toUpperCase();
+  };
+
   return (
     <div className="relative">
       <motion.button
@@ -30,7 +39,7 @@ const ProfileDropdown = () => {
       >
         <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center">
           <span className="text-white font-medium">
-            {user.name.charAt(0).toUpperCase()}
+            {getUserInitial()}
           </span>
         </div>
       </motion.button>
@@ -45,8 +54,8 @@ const ProfileDropdown = () => {
           >
             {/* Profile Header */}
             <div className="px-4 py-3 border-b border-gray-100 dark:border-dark-700">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.name || 'User'}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email || ''}</p>
             </div>
 
             {/* Stats Overview */}
