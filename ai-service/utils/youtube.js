@@ -5,22 +5,43 @@ const axios = require('axios');
 // Extract transcript from YouTube video
 const getVideoTranscript = async (videoId) => {
   try {
+    console.log(`Attempting to fetch transcript for video: ${videoId}`);
+    
     // Try primary method
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     if (transcript && transcript.length > 0) {
-      return transcript.map(item => item.text).join(' ');
+      const fullTranscript = transcript.map(item => item.text).join(' ');
+      console.log(`✅ Transcript fetched successfully: ${fullTranscript.length} characters`);
+      return fullTranscript;
     }
 
     // If primary method fails, try backup method
+    console.log('Trying backup caption method...');
     const captions = await getSubtitles({
       videoID: videoId,
       lang: 'en'
     });
     
-    return captions.map(caption => caption.text).join(' ');
+    if (captions && captions.length > 0) {
+      const fullCaptions = captions.map(caption => caption.text).join(' ');
+      console.log(`✅ Captions fetched successfully: ${fullCaptions.length} characters`);
+      return fullCaptions;
+    }
+    
+    throw new Error('No transcript or captions available');
   } catch (error) {
-    console.error('Error fetching transcript:', error);
-    throw new Error('Failed to fetch video transcript');
+    console.error('Error fetching transcript:', error.message || error);
+    
+    // Check for specific error types
+    if (error.message && error.message.includes('Transcript is disabled')) {
+      throw new Error('This video does not have captions/subtitles available. Please try a different video with captions enabled.');
+    }
+    
+    if (error.message && error.message.includes('Could not find')) {
+      throw new Error('Video not found or unavailable. Please check the video ID.');
+    }
+    
+    throw new Error('Unable to fetch video transcript. The video may not have captions available or they may be disabled.');
   }
 };
 
