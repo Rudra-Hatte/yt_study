@@ -92,26 +92,26 @@ const Courses = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'completed':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Completed</span>;
       case 'in-progress':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">In Progress</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">In Progress</span>;
       default:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Not Started</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">Not Started</span>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Courses</h1>
-            <p className="text-gray-600 mt-2">Manage your learning journey</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">My Courses</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your learning journey</p>
           </div>
           <Link
             to="/create-course"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             <svg 
               className="-ml-1 mr-2 h-5 w-5" 
@@ -192,7 +192,7 @@ const Courses = () => {
                 key={course.id}
                 whileHover={{ scale: 1.02, translateY: -4 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-all"
+                className="bg-white dark:bg-dark-800 rounded-xl shadow-lg overflow-hidden border border-gray-100 dark:border-dark-700 hover:shadow-xl transition-all"
               >
                 <Link to={`/courses/${course.id}`}>
                   <div className="relative pb-[56.25%] bg-gradient-to-br from-gray-900 to-gray-800">
@@ -209,21 +209,21 @@ const Courses = () => {
                   <div className="p-5">
                     <div className="flex items-center gap-2 mb-3">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold 
-                        ${course.level === 'Beginner' ? 'bg-green-100 text-green-800' :
-                        course.level === 'Intermediate' ? 'bg-blue-100 text-blue-800' :
-                        'bg-purple-100 text-purple-800'}`}>
+                        ${course.level === 'Beginner' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                        course.level === 'Intermediate' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                        'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'}`}>
                         {course.level}
                       </span>
                       {getStatusBadge(course.status)}
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{course.description}</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">{course.title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{course.description}</p>
                     <div className="flex items-center justify-between mt-auto">
-                      <div className="flex items-center text-sm text-gray-500">
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <span>{course.completedLessons}/{course.totalLessons} lessons</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                        <div className="w-24 bg-gray-200 dark:bg-dark-600 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${
                               course.progress === 100 ? 'bg-green-500' :
@@ -232,7 +232,7 @@ const Courses = () => {
                             style={{ width: `${course.progress}%` }}
                           />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">{course.progress}%</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{course.progress}%</span>
                       </div>
                     </div>
                   </div>
@@ -246,8 +246,8 @@ const Courses = () => {
         {!loading && courses.length === 0 && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No courses yet</h3>
-            <p className="text-gray-600 mb-6">Create your first course by pasting a YouTube URL</p>
+            <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">No courses yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Create your first course by pasting a YouTube URL</p>
             <button
               onClick={() => setShowCreateForm(true)}
               className="btn-primary"

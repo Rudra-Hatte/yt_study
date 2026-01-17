@@ -4,7 +4,7 @@ export const Logo = ({ className = "h-8 w-auto" }) => {
   return (
     <div className={`flex items-center ${className}`}>
       <svg
-        className="text-indigo-600"
+        className="text-indigo-600 dark:text-indigo-400"
         width="32"
         height="32"
         viewBox="0 0 24 24"
@@ -21,7 +21,7 @@ export const Logo = ({ className = "h-8 w-auto" }) => {
           fill="currentColor"
         />
       </svg>
-      <span className="ml-2 text-xl font-bold text-gray-900">YT Study</span>
+      <span className="ml-2 text-xl font-bold text-gray-900 dark:text-gray-100">YT Study</span>
     </div>
   );
 };

@@ -34,23 +34,23 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl overflow-hidden border border-transparent dark:border-dark-700">
           {/* Header */}
-          <div className="p-8 text-center bg-gradient-to-r from-indigo-500 to-purple-600">
+          <div className="p-8 text-center bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700">
             <motion.div
               initial={{ scale: 0.5 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2 }}
             >
               <h1 className="text-3xl font-bold text-white mb-2">Welcome Back!</h1>
-              <p className="text-indigo-100">Continue your learning journey</p>
+              <p className="text-indigo-100 dark:text-indigo-200">Continue your learning journey</p>
             </motion.div>
           </div>
 
@@ -63,13 +63,13 @@ const Login = () => {
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Email Address
                   </label>
                   <input
                     type="email"
                     required
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -83,13 +83,13 @@ const Login = () => {
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
                 >
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Password
                   </label>
                   <input
                     type="password"
                     required
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -124,12 +124,12 @@ const Login = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
-                className="text-sm text-gray-600"
+                className="text-sm text-gray-600 dark:text-gray-400"
               >
                 Don't have an account?{' '}
                 <Link
                   to="/register"
-                  className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                  className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
                 >
                   Sign up here
                 </Link>
