@@ -11,7 +11,15 @@ const getTimedTextCaptions = async (videoId) => {
     const watchPageUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const response = await axios.get(watchPageUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none'
       }
     });
     
@@ -28,17 +36,25 @@ const getTimedTextCaptions = async (videoId) => {
     // Get caption tracks
     const captionTracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
     
+    console.log(`📋 Caption tracks available: ${captionTracks?.length || 0}`);
+    if (captionTracks && captionTracks.length > 0) {
+      console.log(`Available languages: ${captionTracks.map(t => t.languageCode).join(', ')}`);
+    }
+    
     if (!captionTracks || captionTracks.length === 0) {
       throw new Error('No caption tracks found');
     }
     
     // Find English caption track or use first available
-    let selectedTrack = captionTracks.find(track => 
-      track.languageCode === 'en' || 
-      track.languageCode.startsWith('en')
-    ) || captionTracks[0];
+    // Prefer auto-generated captions if available (more reliable)
+    let selectedTrack = 
+      captionTracks.find(track => track.languageCode === 'en' && track.kind === 'asr') || // Auto-generated English
+      captionTracks.find(track => track.languageCode === 'en') || // Manual English
+      captionTracks.find(track => track.languageCode.startsWith('en')) || // Any English variant
+      captionTracks[0]; // Fallback to first available
     
-    console.log(`✅ Found caption track: ${selectedTrack.name?.simpleText || selectedTrack.languageCode}`);
+    const trackType = selectedTrack.kind === 'asr' ? '(auto-generated)' : '(manual)';
+    console.log(`✅ Found caption track: ${selectedTrack.name?.simpleText || selectedTrack.languageCode} ${trackType}`);
     
     // Fetch the caption data (XML format)
     const captionUrl = selectedTrack.baseUrl;
