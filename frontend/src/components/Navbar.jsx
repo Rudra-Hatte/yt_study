@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext_simple';
 import { motion } from 'framer-motion';
 import { Logo } from './Logo';
 import ProfileDropdown from './ProfileDropdown';
@@ -25,7 +25,7 @@ const Navbar = () => {
               <Logo />
             </Link>
             
-            {user && (
+            {isAuthenticated && user && (
               <div className="ml-4 sm:flex sm:space-x-8"> {/* Adjusted margin */}
                 <Link
                   to="/dashboard"
@@ -39,12 +39,18 @@ const Navbar = () => {
                 >
                   Courses
                 </Link>
+                <Link
+                  to="/create-course"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 border-b-2 border-transparent hover:border-indigo-600 transition-colors duration-200"
+                >
+                  Create Course
+                </Link>
               </div>
             )}
           </div>
 
           <div className="flex items-center pr-2"> {/* Added pr-2 for minimal padding */}
-            {user ? (
+            {isAuthenticated && user ? (
               <ProfileDropdown />
             ) : (
               <div className="flex items-center space-x-4">

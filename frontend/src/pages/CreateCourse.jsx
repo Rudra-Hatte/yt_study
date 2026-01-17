@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext_simple';
 import { generateThumbnail } from '../utils/thumbnailGenerator';
+import AutomatedCourseGenerator from '../components/AutomatedCourseGenerator';
+import toast from 'react-hot-toast';
 
 const SUGGESTED_TOPICS = [
-  { id: 1, name: 'JavaScript Fundamentals', color: 'bg-yellow-100' },
-  { id: 2, name: 'React.js Basics', color: 'bg-blue-100' },
-  { id: 3, name: 'Python Programming', color: 'bg-green-100' },
-  { id: 4, name: 'Web Development', color: 'bg-purple-100' },
-  { id: 5, name: 'Data Structures', color: 'bg-red-100' }
+  { id: 1, name: 'JavaScript Fundamentals', color: 'bg-yellow-100', icon: '🟡' },
+  { id: 2, name: 'React.js Basics', color: 'bg-blue-100', icon: '⚛️' },
+  { id: 3, name: 'Python Programming', color: 'bg-green-100', icon: '🐍' },
+  { id: 4, name: 'Web Development', color: 'bg-purple-100', icon: '🌐' },
+  { id: 5, name: 'Data Structures', color: 'bg-red-100', icon: '📊' },
+  { id: 6, name: 'Machine Learning', color: 'bg-pink-100', icon: '🤖' },
+  { id: 7, name: 'Mobile Development', color: 'bg-indigo-100', icon: '📱' },
+  { id: 8, name: 'Database Design', color: 'bg-gray-100', icon: '🗄️' }
 ];
 
 const CreateCourse = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [showMethodModal, setShowMethodModal] = useState(true);
+  const [creationMethod, setCreationMethod] = useState(null); // 'manual' or 'ai'
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -23,6 +30,15 @@ const CreateCourse = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const selectCreationMethod = (method) => {
+    setCreationMethod(method);
+    setShowMethodModal(false);
+  };
+
+  if (creationMethod === 'ai') {
+    return <AutomatedCourseGenerator />;
+  }
 
   const validateYoutubeUrl = (url) => {
     const regex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
@@ -108,8 +124,80 @@ const CreateCourse = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8">Create New Course</h1>
+    <div className="max-w-6xl mx-auto p-6">
+      {/* Creation Method Modal */}
+      <AnimatePresence>
+        {showMethodModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            >
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Your Course</h2>
+                <p className="text-gray-600">Choose how you'd like to create your course</p>
+              </div>
+
+              <div className="space-y-4">
+                <motion.button
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(99, 102, 241, 0.2)" }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => selectCreationMethod('ai')}
+                  className="w-full p-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <div className="flex items-center justify-center mb-2">
+                    <span className="text-3xl mr-3">🤖</span>
+                    <span className="text-xl font-semibold">AI-Powered Course</span>
+                  </div>
+                  <p className="text-purple-100 text-sm">
+                    Let AI help you create a structured course from any topic. 
+                    Just provide the topic, difficulty, and duration - we'll handle the rest!
+                  </p>
+                  <div className="mt-3 text-xs text-purple-200">
+                    ✨ Auto-generates content • 📚 Structured modules • 🎯 Personalized quizzes
+                  </div>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(16, 185, 129, 0.2)" }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => selectCreationMethod('manual')}
+                  className="w-full p-6 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <div className="flex items-center justify-center mb-2">
+                    <span className="text-3xl mr-3">✏️</span>
+                    <span className="text-xl font-semibold">Manual Course Creation</span>
+                  </div>
+                  <p className="text-emerald-100 text-sm">
+                    Create a course manually by adding your own videos and content. 
+                    Perfect for existing playlists or custom content.
+                  </p>
+                  <div className="mt-3 text-xs text-emerald-200">
+                    🎬 Add YouTube videos • 📝 Custom descriptions • 🎨 Full control
+                  </div>
+                </motion.button>
+              </div>
+
+              <div className="mt-6 text-center">
+                <p className="text-xs text-gray-500">
+                  You can always enhance your course with AI-generated quizzes and flashcards later!
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <h1 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        Create New Course - Manual Mode
+      </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}

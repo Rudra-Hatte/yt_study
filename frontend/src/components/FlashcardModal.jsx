@@ -15,7 +15,26 @@ const FlashcardModal = ({ isOpen, onClose, flashcards }) => {
 
   // Safety check for empty or invalid flashcards
   if (!flashcards || !Array.isArray(flashcards) || flashcards.length === 0) {
-    console.warn('No flashcards provided to FlashcardModal');
+    if (isOpen) {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-lg p-6 w-full max-w-md text-center"
+          >
+            <h2 className="text-xl font-bold mb-4">No Flashcards Available</h2>
+            <p className="text-gray-600 mb-4">Generate flashcards by clicking the button in the video section.</p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              Close
+            </button>
+          </motion.div>
+        </div>
+      );
+    }
     return null;
   }
 

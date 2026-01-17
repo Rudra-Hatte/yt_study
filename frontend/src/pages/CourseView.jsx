@@ -1,29 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MOCK_COURSES } from '../utils/mockData';
+import { useCourse } from '../contexts/CourseContext';
 import { getQuizForVideo } from '../utils/quizData';
 import { getFlashcardsForVideo } from '../utils/flashcardData';
 import QuizModal from '../components/QuizModal';
 import FlashcardModal from '../components/FlashcardModal';
+import SummaryModal from '../components/SummaryModal';
 import LoadingOverlay from '../components/LoadingOverlay';
+import { AI_SERVICE_URL } from '../config/api';
 import toast from 'react-hot-toast';
 
 const CourseView = () => {
   const { courseId } = useParams();
+  const { courses } = useCourse();
   const [currentVideo, setCurrentVideo] = useState(0);
   const [course, setCourse] = useState(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showFlashcards, setShowFlashcards] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingType, setGeneratingType] = useState(null);
   const [currentQuiz, setCurrentQuiz] = useState([]);
   const [currentFlashcards, setCurrentFlashcards] = useState([]);
 
   useEffect(() => {
-    const foundCourse = MOCK_COURSES.find(c => c.id === parseInt(courseId));
+    const foundCourse = courses.find(c => c.id === parseInt(courseId));
     setCourse(foundCourse);
-  }, [courseId]);
+  }, [courseId, courses]);
 
   if (!course) return null;
 
@@ -38,13 +42,37 @@ const CourseView = () => {
     try {
       setGeneratingType('quiz');
       setIsGenerating(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const quizData = getQuizForVideo();
-      setCurrentQuiz(quizData);
-      setShowQuiz(true);
+      // Call AI service to generate quiz from video transcript
+      const response = await fetch(`${AI_SERVICE_URL}/api/ai/quiz`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: course.videos[currentVideo].youtubeId,
+          title: course.videos[currentVideo].title,
+          numQuestions: 5,
+          difficulty: 'medium'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate quiz');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setCurrentQuiz(result.data);
+        setShowQuiz(true);
+        toast.success('Quiz generated successfully!');
+      } else {
+        throw new Error(result.error || 'Failed to generate quiz');
+      }
     } catch (error) {
       console.error('Error generating quiz:', error);
+      toast.error('Failed to generate quiz. Please try again.');
     } finally {
       setIsGenerating(false);
       setGeneratingType(null);
@@ -55,17 +83,44 @@ const CourseView = () => {
     try {
       setGeneratingType('flashcards');
       setIsGenerating(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const flashcardData = getFlashcardsForVideo();
-      setCurrentFlashcards(flashcardData);
-      setShowFlashcards(true);
+      // Call AI service to generate flashcards from video transcript
+      const response = await fetch(`${AI_SERVICE_URL}/api/ai/flashcards`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: course.videos[currentVideo].youtubeId,
+          title: course.videos[currentVideo].title,
+          numCards: 10
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate flashcards');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setCurrentFlashcards(result.data);
+        setShowFlashcards(true);
+        toast.success('Flashcards generated successfully!');
+      } else {
+        throw new Error(result.error || 'Failed to generate flashcards');
+      }
     } catch (error) {
       console.error('Error generating flashcards:', error);
+      toast.error('Failed to generate flashcards. Please try again.');
     } finally {
       setIsGenerating(false);
       setGeneratingType(null);
     }
+  };
+
+  const handleGenerateSummary = () => {
+    setShowSummary(true);
   };
 
   return (
@@ -87,12 +142,12 @@ const CourseView = () => {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {course.videos[currentVideo].title}
                 </h1>
-                <div className="mt-4 flex gap-4">
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleGenerateQuiz}
-                    className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
+                    className="py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
                   >
                     <span className="mr-2">📝</span>
                     Take Quiz
@@ -101,10 +156,19 @@ const CourseView = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleGenerateFlashcards}
-                    className="flex-1 py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
+                    className="py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
                   >
                     <span className="mr-2">🎴</span>
                     Study Flashcards
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleGenerateSummary}
+                    className="py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
+                  >
+                    <span className="mr-2">📋</span>
+                    Summarize
                   </motion.button>
                 </div>
               </div>
@@ -170,6 +234,13 @@ const CourseView = () => {
         onClose={() => setShowFlashcards(false)}
         flashcards={currentFlashcards}
         videoTitle={course.videos[currentVideo].title}
+      />
+
+      <SummaryModal
+        isOpen={showSummary}
+        onClose={() => setShowSummary(false)}
+        videoTitle={course.videos[currentVideo].title}
+        videoId={course.videos[currentVideo].youtubeId}
       />
 
       <LoadingOverlay

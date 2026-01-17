@@ -4,8 +4,12 @@ import { MOCK_COURSES, MOCK_PROGRESS } from '../utils/mockData';
 const CourseContext = createContext();
 
 export const CourseProvider = ({ children }) => {
-  const [courses] = useState(MOCK_COURSES);
+  const [courses, setCourses] = useState(MOCK_COURSES);
   const [progress, setProgress] = useState(MOCK_PROGRESS);
+
+  const addCourse = (newCourse) => {
+    setCourses(prev => [newCourse, ...prev]); // Add to beginning of array
+  };
 
   const updateVideoProgress = (courseId, videoId, completed) => {
     setProgress(prev => ({
@@ -33,6 +37,7 @@ export const CourseProvider = ({ children }) => {
     <CourseContext.Provider value={{
       courses,
       progress,
+      addCourse,
       updateVideoProgress,
       getCourseProgress
     }}>
@@ -42,3 +47,4 @@ export const CourseProvider = ({ children }) => {
 };
 
 export const useCourses = () => useContext(CourseContext);
+export const useCourse = () => useContext(CourseContext);

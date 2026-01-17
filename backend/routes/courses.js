@@ -19,6 +19,17 @@ router.get('/', getCourses);
 // Search courses
 router.get('/search', searchCourses);
 
+// Get user's enrolled courses
+router.get('/enrolled', auth, async (req, res) => {
+  try {
+    const user = await require('../models/User').findById(req.user.id).populate('enrolledCourses');
+    res.json(user.enrolledCourses || []);
+  } catch (error) {
+    console.error('Error fetching enrolled courses:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get course by ID
 router.get('/:id', getCourse);
 

@@ -63,9 +63,57 @@ const getRecommendations = async (watchHistory, availableVideos, learningGoal = 
   }
 };
 
+// Generate complete course
+const generateCourse = async (courseData) => {
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/generate-course`, courseData);
+    return response.data;
+  } catch (error) {
+    console.error('AI Course generation error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to generate course');
+  }
+};
+
+// Generate AI-powered course from topic only
+const generateCourseAI = async (courseData) => {
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/generate-course-ai`, courseData);
+    return response.data;
+  } catch (error) {
+    console.error('AI Course generation error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to generate AI course');
+  }
+};
+
+// Summarize video
+const summarizeVideo = async (videoData) => {
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/summary`, videoData);
+    return response.data;
+  } catch (error) {
+    console.error('AI Video summarization error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to summarize video');
+  }
+};
+
+// Chat with AI
+const chatWithAI = async (chatData) => {
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/chat`, chatData);
+    return response.data;
+  } catch (error) {
+    console.error('AI Chat error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to chat with AI');
+  }
+};
+
 module.exports = {
   generateQuiz,
   generateFlashcards,
   generateSummary,
-  getRecommendations
+  getRecommendations,
+  generateCourse,
+  generateCourseAI,
+  summarizeVideo,
+  chatWithAI
 };

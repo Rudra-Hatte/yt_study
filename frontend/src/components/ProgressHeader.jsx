@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext_simple';
 import { useCourses } from '../contexts/CourseContext';
 
 const ProgressHeader = ({ course }) => {

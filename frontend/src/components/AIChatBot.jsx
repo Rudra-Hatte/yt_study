@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CHATBOT_QA } from '../utils/chatbotQA';
+import { useAuth } from '../contexts/AuthContext_simple';
+import toast from 'react-hot-toast';
 
 const AIChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,37 +9,56 @@ const AIChatBot = () => {
     { type: 'bot', text: "Hi! I'm your AI study buddy. How can I help you today?" }
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
+  const messagesEndRef = useRef(null);
 
-  const findBestMatch = (input) => {
-    const userInput = input.toLowerCase().trim();
-    
-    // Direct match
-    if (CHATBOT_QA[userInput]) {
-      return CHATBOT_QA[userInput];
-    }
-
-    // Fuzzy match
-    const bestMatch = Object.keys(CHATBOT_QA).find(key => 
-      userInput.includes(key) || key.includes(userInput)
-    );
-
-    return bestMatch 
-      ? CHATBOT_QA[bestMatch]
-      : "I'm not sure about that. Try asking about the course content, features, or study tips!";
-  };
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = input;
     setInput('');
     setMessages(prev => [...prev, { type: 'user', text: userMessage }]);
+    setIsLoading(true);
 
-    // Get AI response
-    setTimeout(() => {
-      const response = findBestMatch(userMessage);
-      setMessages(prev => [...prev, { type: 'bot', text: response }]);
-    }, 500);
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          context: 'general_study_help'
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessages(prev => [...prev, { type: 'bot', text: data.response }]);
+      } else {
+        // Fallback response
+        setMessages(prev => [...prev, { 
+          type: 'bot', 
+          text: "I'm having trouble connecting right now. Try asking about course content, study tips, or learning strategies!" 
+        }]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      // Fallback response
+      setMessages(prev => [...prev, { 
+        type: 'bot', 
+        text: "I'm having some technical difficulties. You can still browse courses and use other features while I get back online!" 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

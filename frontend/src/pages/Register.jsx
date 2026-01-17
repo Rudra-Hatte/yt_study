@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext_simple';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const Register = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,10 +21,22 @@ const Register = () => {
       toast.error('Passwords do not match');
       return;
     }
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
     setIsLoading(true);
     try {
-      await register(formData.name, formData.email, formData.password);
+      const result = await register(formData.name, formData.email, formData.password);
+      if (result.success) {
+        toast.success('Account created successfully!');
+        navigate('/dashboard'); // Navigate to dashboard after successful registration
+        // Navigation is handled by the register function
+      } else {
+        toast.error(result.error || 'Registration failed');
+      }
     } catch (error) {
+      toast.error('Registration failed. Please try again.');
       console.error(error);
     } finally {
       setIsLoading(false);

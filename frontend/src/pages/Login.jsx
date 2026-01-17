@@ -1,19 +1,32 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext_simple';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.email || !formData.password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
     setIsLoading(true);
     try {
-      await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        toast.success('Welcome back!');
+        navigate('/dashboard'); // Navigate to dashboard after successful login
+      } else {
+        toast.error(result.error || 'Login failed');
+      }
     } catch (error) {
+      toast.error('Login failed. Please try again.');
       console.error(error);
     } finally {
       setIsLoading(false);

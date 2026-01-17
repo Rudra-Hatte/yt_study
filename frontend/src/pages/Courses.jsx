@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext_simple';
 import { MOCK_COURSES } from '../utils/mockData';
 import SkeletonCourseCard from '../components/SkeletonCourseCard';
 import toast from 'react-hot-toast';

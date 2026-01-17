@@ -9,32 +9,24 @@ exports.register = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { username, email, password, firstName, lastName } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
-    });
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       return res.status(409).json({
         error: 'User already exists',
-        message: existingUser.email === email 
-          ? 'Email is already registered' 
-          : 'Username is already taken'
+        message: 'Email is already registered'
       });
     }
 
     // Create new user
     const user = new User({
-      username,
+      name,
       email,
-      password,
-      profile: {
-        firstName: firstName || '',
-        lastName: lastName || ''
-      }
+      password
     });
 
     await user.save();
@@ -52,9 +44,9 @@ exports.register = async (req, res) => {
       data: {
         user: {
           id: user._id,
-          username: user.username,
+          name: user.name,
           email: user.email,
-          profile: user.profile
+          role: user.role
         },
         token
       }
@@ -98,7 +90,7 @@ exports.login = async (req, res) => {
     }
 
     // Check password
-    const isPasswordValid = await user.comparePassword(password);
+    const isPasswordValid = await user.matchPassword(password);
     
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -117,17 +109,15 @@ exports.login = async (req, res) => {
     res.json({
       success: true,
       message: 'Login successful',
-      data: {
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          profile: user.profile,
-          enrolledCourses: user.enrolledCourses,
-          preferences: user.preferences
-        },
-        token
-      }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        enrolledCourses: user.enrolledCourses,
+        preferences: user.preferences
+      },
+      token
     });
 
   } catch (error) {
@@ -160,9 +150,9 @@ const changePassword = async (req, res) => {
 };
 
 module.exports = {
-  register,
-  login,
-  getMe,
-  updateProfile,
-  changePassword
+  register: exports.register,
+  login: exports.login,
+  getMe: exports.getMe,
+  updateProfile: exports.updateProfile,
+  changePassword: exports.changePassword
 };

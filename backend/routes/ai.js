@@ -188,4 +188,142 @@ router.get('/recommendations', auth, async (req, res) => {
   }
 });
 
+// Generate complete course with AI
+router.post('/generate-course', auth, async (req, res) => {
+  try {
+    const { topic, videoUrls, title, description, difficulty } = req.body;
+    
+    // Call AI service to generate course
+    const result = await aiService.generateCourse({
+      topic,
+      videoUrls,
+      title,
+      description,
+      difficulty
+    });
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        course: result.data
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message || 'Course generation failed'
+      });
+    }
+  } catch (err) {
+    console.error('Course generation error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during course generation'
+    });
+  }
+});
+
+// Generate AI-powered course from topic only
+router.post('/generate-course-ai', auth, async (req, res) => {
+  try {
+    const { topic, difficulty = 'beginner', duration = '4-6 hours' } = req.body;
+    
+    if (!topic) {
+      return res.status(400).json({
+        success: false,
+        message: 'Topic is required'
+      });
+    }
+    
+    // Call AI service to generate course
+    const result = await aiService.generateCourseAI({
+      topic,
+      difficulty,
+      duration
+    });
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: result.data
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'AI course generation failed'
+      });
+    }
+  } catch (err) {
+    console.error('AI Course generation error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Server error during AI course generation'
+    });
+  }
+});
+
+// Summarize video content
+router.post('/summarize-video', auth, async (req, res) => {
+  try {
+    const { videoId, videoUrl, summaryType = 'comprehensive' } = req.body;
+    
+    // Call AI service to summarize video
+    const result = await aiService.summarizeVideo({
+      videoId,
+      videoUrl,
+      summaryType
+    });
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        summary: result.data
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message || 'Video summarization failed'
+      });
+    }
+  } catch (err) {
+    console.error('Video summarization error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during video summarization'
+    });
+  }
+});
+
+// Chat with AI Study Buddy
+router.post('/chat', auth, async (req, res) => {
+  try {
+    const { message, context, courseId } = req.body;
+    
+    // Call AI service for chat response
+    const result = await aiService.chatWithAI({
+      message,
+      context,
+      courseId,
+      userId: req.user.id
+    });
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        response: result.data.response
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message || 'Chat failed'
+      });
+    }
+  } catch (err) {
+    console.error('AI chat error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during AI chat'
+    });
+  }
+});
+
 module.exports = router;

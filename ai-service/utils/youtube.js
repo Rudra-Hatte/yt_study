@@ -63,7 +63,50 @@ const getVideoMetadata = async (videoId) => {
   }
 };
 
+// Search YouTube videos by query
+const searchYouTubeVideos = async (query, maxResults = 10) => {
+  try {
+    if (!process.env.YOUTUBE_API_KEY) {
+      console.warn('YouTube API key not configured, using fallback');
+      // Return empty array if no API key - will be handled by calling function
+      return [];
+    }
+    
+    const response = await axios.get(
+      `https://www.googleapis.com/youtube/v3/search`, {
+        params: {
+          q: query,
+          part: 'snippet',
+          type: 'video',
+          maxResults: maxResults,
+          order: 'relevance',
+          videoDuration: 'medium', // 4-20 minutes
+          videoCaption: 'closedCaption', // Only videos with captions
+          key: process.env.YOUTUBE_API_KEY
+        }
+      }
+    );
+    
+    if (!response.data.items || response.data.items.length === 0) {
+      return [];
+    }
+    
+    return response.data.items.map(item => ({
+      videoId: item.id.videoId,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      channelTitle: item.snippet.channelTitle,
+      publishedAt: item.snippet.publishedAt,
+      thumbnailUrl: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default.url
+    }));
+  } catch (error) {
+    console.error('Error searching YouTube videos:', error);
+    return []; // Return empty array on error
+  }
+};
+
 module.exports = {
   getVideoTranscript,
-  getVideoMetadata
+  getVideoMetadata,
+  searchYouTubeVideos
 };

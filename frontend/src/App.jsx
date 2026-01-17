@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './contexts/AuthContext_simple';
 import { CourseProvider } from './contexts/CourseContext';
 import Navbar from './components/Navbar';
 import AppRoutes from './routes';
@@ -26,7 +27,7 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <CourseProvider>
           <div className="min-h-screen bg-gray-50">
@@ -35,6 +36,16 @@ function App() {
               <AppRoutes />
             </main>
             <AIChatBot />
+            <Toaster 
+              position="top-center"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+              }}
+            />
           </div>
         </CourseProvider>
       </AuthProvider>
