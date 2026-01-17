@@ -84,8 +84,9 @@ ENV/
 # Ollama model files (can be large)
 *.gguf
 *.bin
-models/
-ollama-models/
+/models/
+/ollama-models/
+ai-service/models/
 
 # AI training data
 training-data/
