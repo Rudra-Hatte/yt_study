@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext_simple';
 import { useCourses } from '../contexts/CourseContext';
 import LearningProfileModal from '../components/LearningProfileModal';
-import { Settings, Sprout, Rocket, Eye, Headphones, Target, Zap } from 'lucide-react';
+import { Settings, Sprout, Rocket, Eye, Headphones, Target, Zap, Trophy, Medal, Award as AwardIcon } from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(
@@ -130,6 +130,12 @@ const Dashboard = () => {
       const inProgress = progressData.courseStats?.inProgress || 0;
       const notStarted = Math.max(0, totalCourses - completedCourses - inProgress);
 
+      // If no courses, show mock data for pie chart
+      const hasNoCourses = totalCourses === 0;
+      const pieChartData = hasNoCourses 
+        ? [3, 5, 2] // Mock data: 3 completed, 5 in progress, 2 not started
+        : [completedCourses, inProgress, notStarted];
+
       setDashboardData({
         stats: {
           totalCourses,
@@ -142,7 +148,7 @@ const Dashboard = () => {
           labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
           datasets: [{
             label: 'Study Hours',
-            data: progressData.weeklyActivity || [0, 0, 0, 0, 0, 0, 0],
+            data: progressData.weeklyActivity || [0.5, 1.2, 0.8, 1.5, 2.0, 1.0, 0.3],
             borderColor: 'rgb(99, 102, 241)',
             tension: 0.4,
             fill: true,
@@ -152,7 +158,7 @@ const Dashboard = () => {
         completionRate: {
           labels: ['Completed', 'In Progress', 'Not Started'],
           datasets: [{
-            data: [completedCourses, inProgress, notStarted],
+            data: pieChartData,
             backgroundColor: [
               'rgb(34, 197, 94)',
               'rgb(99, 102, 241)',
@@ -409,41 +415,89 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Recommended Videos */}
+
+
+        {/* Leaderboard Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Recommended for You</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {recommendedVideos.map(video => (
-              <motion.div
-                key={video.id}
-                whileHover={{ 
-                  scale: 1.03,
-                  transition: { duration: 0.2 }
-                }}
-                className="bg-white dark:bg-dark-800 rounded-xl shadow-sm overflow-hidden border border-transparent dark:border-dark-700"
-              >
-                <div className="relative">
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="w-full object-cover"
-                  />
-                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-black bg-opacity-75 rounded text-white text-sm">
-                    {video.duration}
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">
-                    {video.title}
-                  </h3>
-                  <div className="flex items-center mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    <span>{video.views}</span>
-                    <span className="mx-1">•</span>
-                    <span>{video.timestamp}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+          <div className="flex items-center mb-6">
+            <Trophy className="w-6 h-6 text-yellow-500 dark:text-yellow-400 mr-2" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Top Learners
+            </h2>
+          </div>
+          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-dark-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Learner</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Learning Rate</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Courses</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hours</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-dark-700">
+                  {[
+                    { rank: 1, name: 'Priya Sharma', avatar: 'PS', rate: '98%', courses: 24, hours: 142, color: 'bg-yellow-500' },
+                    { rank: 2, name: 'Arjun Patel', avatar: 'AP', rate: '95%', courses: 21, hours: 128, color: 'bg-gray-400' },
+                    { rank: 3, name: 'Ananya Kumar', avatar: 'AK', rate: '92%', courses: 19, hours: 115, color: 'bg-orange-600' },
+                    { rank: 4, name: 'Rohan Mehta', avatar: 'RM', rate: '89%', courses: 18, hours: 107, color: 'bg-indigo-500' },
+                    { rank: 5, name: 'Sneha Reddy', avatar: 'SR', rate: '87%', courses: 17, hours: 98, color: 'bg-indigo-500' },
+                    { rank: 6, name: 'Vikram Singh', avatar: 'VS', rate: '85%', courses: 16, hours: 92, color: 'bg-indigo-500' },
+                    { rank: 7, name: 'Diya Joshi', avatar: 'DJ', rate: '83%', courses: 15, hours: 87, color: 'bg-indigo-500' },
+                    { rank: 8, name: 'Aditya Verma', avatar: 'AV', rate: '81%', courses: 14, hours: 79, color: 'bg-indigo-500' },
+                  ].map((learner) => (
+                    <motion.tr
+                      key={learner.rank}
+                      whileHover={{ backgroundColor: 'rgba(99, 102, 241, 0.05)' }}
+                      className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {learner.rank <= 3 ? (
+                            <div className={`w-8 h-8 rounded-full ${learner.color} flex items-center justify-center text-white font-bold`}>
+                              {learner.rank === 1 && <Trophy className="w-5 h-5" />}
+                              {learner.rank === 2 && <Medal className="w-5 h-5" />}
+                              {learner.rank === 3 && <AwardIcon className="w-5 h-5" />}
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-dark-600 flex items-center justify-center text-gray-700 dark:text-gray-300 font-semibold">
+                              {learner.rank}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-semibold mr-3">
+                            {learner.avatar}
+                          </div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100">{learner.name}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-2 mr-2" style={{ width: '100px' }}>
+                            <div
+                              className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full"
+                              style={{ width: learner.rate }}
+                            ></div>
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{learner.rate}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                        {learner.courses}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                        {learner.hours}h
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 

@@ -13,6 +13,7 @@ const progressRoutes = require('./routes/progress');
 const quizRoutes = require('./routes/quizzes');
 const flashcardRoutes = require('./routes/flashcards');
 const aiRoutes = require('./routes/ai');
+const leaderboardRoutes = require('./routes/leaderboard');
 
 // Initialize app
 const app = express();
@@ -72,6 +73,7 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/flashcards', flashcardRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
