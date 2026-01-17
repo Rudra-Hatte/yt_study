@@ -17,13 +17,26 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Health check endpoints (IMPORTANT for Render deployment)
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'AI Service is running',
+    service: 'yt-study-ai-service',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    service: 'yt-study-ai-service',
+    uptime: process.uptime()
+  });
+});
+
 // Routes
 app.use('/api/ai', aiRoutes);
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'yt-study-ai-service' });
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -35,7 +48,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5002;
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🤖 AI Service running on port ${PORT}`);
 });
