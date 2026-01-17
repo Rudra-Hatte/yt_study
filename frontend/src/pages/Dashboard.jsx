@@ -92,14 +92,14 @@ const Dashboard = () => {
     setIsLoading(true);
     try {
       // Fetch user's enrolled courses
-      const coursesResponse = await fetch('/api/courses/enrolled', {
+      const coursesResponse = await fetch(`${API_URL}/api/courses/enrolled`, {
         headers: {
           'Authorization': `Bearer ${user.token}`
         }
       });
 
       // Fetch user progress
-      const progressResponse = await fetch('/api/progress/overview', {
+      const progressResponse = await fetch(`${API_URL}/api/progress/overview`, {
         headers: {
           'Authorization': `Bearer ${user.token}`
         }
