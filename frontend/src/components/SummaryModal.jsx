@@ -24,59 +24,31 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
     try {
       let transcript = null;
       
-      // Method 1: Try browser-side caption extraction
+      // Try browser-side caption extraction
       try {
         transcript = await extractYouTubeCaptions(videoId);
         console.log('✅ Browser extraction successful');
       } catch (browserError) {
-        console.log('⚠️ Browser extraction failed, trying server-side...');
+        console.log('⚠️ Browser extraction failed, using speech recognition...');
         
-        // Method 2: Try server-side extraction
+        // Silently fallback to speech-to-text
         try {
-          const response = await fetch(`${AI_SERVICE_URL}/api/ai/summary`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              videoId: videoId,
-              title: videoTitle,
-              format: 'detailed'
-            }),
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success && result.data) {
-              setSummary(result.data);
-              return;
-            }
-          }
-        } catch (serverError) {
-          console.log('⚠️ Server extraction also failed');
-        }
-        
-        // Method 3: ULTIMATE FALLBACK - Speech-to-Text
-        const useSpeechToText = window.confirm(
-          '⚠️ Caption extraction failed!\n\n' +
-          '🎤 Would you like to use speech-to-text instead?\n\n' +
-          'Instructions:\n' +
-          '1. Click OK\n' +
-          '2. Play the video with sound\n' +
-          '3. Wait for transcription to complete\n\n' +
-          'Note: Your browser will ask for microphone permission.'
-        );
-        
-        if (useSpeechToText) {
-          toast.loading('Starting speech recognition... Please play the video!');
+          toast.loading('📹 Please watch the complete video for best results!');
           
           transcript = await transcribeWithUserHelp(
             (progress) => console.log(`Transcription progress: ${progress}%`),
-            (status) => toast.loading(status)
+            (status) => {
+              if (status.includes('Transcribing')) {
+                toast.loading('📹 Capturing video content... Keep watching!');
+              } else {
+                toast.loading(status);
+              }
+            }
           );
           
           console.log('✅ Speech-to-text transcription successful!');
-          toast.success('Transcription complete!');
-        } else {
-          throw new Error('All transcription methods failed or cancelled');
+        } catch (speechError) {
+          console.log('⚠️ Speech-to-text also failed, letting backend try');
         }
       }
       
