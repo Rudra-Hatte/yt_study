@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext_simple';
 import { AI_SERVICE_URL } from '../config/api';
 import toast from 'react-hot-toast';
+import { MessageCircle, Send, X } from 'lucide-react';
 
 const AIChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,8 +42,8 @@ const AIChatBot = () => {
 
       const data = await response.json();
 
-      if (data.success) {
-        setMessages(prev => [...prev, { type: 'bot', text: data.response }]);
+      if (data.success && data.data) {
+        setMessages(prev => [...prev, { type: 'bot', text: data.data.response }]);
       } else {
         // Fallback response
         setMessages(prev => [...prev, { 
@@ -70,33 +71,21 @@ const AIChatBot = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white rounded-lg shadow-xl w-80 mb-4"
+            className="bg-white dark:bg-dark-800 rounded-lg shadow-xl w-80 mb-4 border border-gray-200 dark:border-dark-700"
           >
             {/* Header with close button */}
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">AI Study Buddy</h3>
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-dark-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI Study Buddy</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
-                <svg 
-                  className="h-5 w-5" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M6 18L18 6M6 6l12 12" 
-                  />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Chat messages */}
-            <div className="h-96 overflow-y-auto p-4 space-y-4">
+            <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-dark-900">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -105,18 +94,30 @@ const AIChatBot = () => {
                   <div
                     className={`max-w-[80%] rounded-lg p-3 ${
                       message.type === 'user'
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
+                        ? 'bg-indigo-600 dark:bg-indigo-500 text-white'
+                        : 'bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-dark-600'
                     }`}
                   >
                     {message.text}
                   </div>
                 </div>
               ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 rounded-lg p-3 border border-gray-200 dark:border-dark-600">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input area */}
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-gray-200 dark:border-dark-700">
               <div className="flex space-x-2">
                 <input
                   type="text"
@@ -124,14 +125,16 @@ const AIChatBot = () => {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask anything..."
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={isLoading}
+                  className="flex-1 border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 placeholder-gray-400 dark:placeholder-gray-500"
                 />
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSend}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+                  disabled={isLoading}
+                  className="bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Send
+                  <Send className="w-4 h-4" />
                 </motion.button>
               </div>
             </div>
@@ -144,9 +147,9 @@ const AIChatBot = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-indigo-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center"
+        className="bg-indigo-600 dark:bg-indigo-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-indigo-700 dark:hover:bg-indigo-600"
       >
-        <span className="text-2xl">🤖</span>
+        <MessageCircle className="w-6 h-6" />
       </motion.button>
     </div>
   );
