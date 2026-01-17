@@ -5,16 +5,17 @@ import { useAuth } from '../contexts/AuthContext_simple';
 import { generateThumbnail } from '../utils/thumbnailGenerator';
 import AutomatedCourseGenerator from '../components/AutomatedCourseGenerator';
 import toast from 'react-hot-toast';
+import { Zap, Code2, DatabaseZap, Globe, BarChart3, Bot, Smartphone, Database, Edit3, Sparkles, BookOpen, Target } from 'lucide-react';
 
 const SUGGESTED_TOPICS = [
-  { id: 1, name: 'JavaScript Fundamentals', color: 'bg-yellow-100', icon: '🟡' },
-  { id: 2, name: 'React.js Basics', color: 'bg-blue-100', icon: '⚛️' },
-  { id: 3, name: 'Python Programming', color: 'bg-green-100', icon: '🐍' },
-  { id: 4, name: 'Web Development', color: 'bg-purple-100', icon: '🌐' },
-  { id: 5, name: 'Data Structures', color: 'bg-red-100', icon: '📊' },
-  { id: 6, name: 'Machine Learning', color: 'bg-pink-100', icon: '🤖' },
-  { id: 7, name: 'Mobile Development', color: 'bg-indigo-100', icon: '📱' },
-  { id: 8, name: 'Database Design', color: 'bg-gray-100', icon: '🗄️' }
+  { id: 1, name: 'JavaScript Fundamentals', color: 'bg-yellow-100 dark:bg-yellow-900', Icon: Zap },
+  { id: 2, name: 'React.js Basics', color: 'bg-blue-100 dark:bg-blue-900', Icon: Code2 },
+  { id: 3, name: 'Python Programming', color: 'bg-green-100 dark:bg-green-900', Icon: DatabaseZap },
+  { id: 4, name: 'Web Development', color: 'bg-purple-100 dark:bg-purple-900', Icon: Globe },
+  { id: 5, name: 'Data Structures', color: 'bg-red-100 dark:bg-red-900', Icon: BarChart3 },
+  { id: 6, name: 'Machine Learning', color: 'bg-pink-100 dark:bg-pink-900', Icon: Bot },
+  { id: 7, name: 'Mobile Development', color: 'bg-indigo-100 dark:bg-indigo-900', Icon: Smartphone },
+  { id: 8, name: 'Database Design', color: 'bg-gray-100 dark:bg-gray-700', Icon: Database }
 ];
 
 const CreateCourse = () => {
@@ -138,11 +139,11 @@ const CreateCourse = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+              className="bg-white dark:bg-dark-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
             >
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Your Course</h2>
-                <p className="text-gray-600">Choose how you'd like to create your course</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Create Your Course</h2>
+                <p className="text-gray-600 dark:text-gray-400">Choose how you'd like to create your course</p>
               </div>
 
               <div className="space-y-4">
@@ -153,15 +154,17 @@ const CreateCourse = () => {
                   className="w-full p-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex items-center justify-center mb-2">
-                    <span className="text-3xl mr-3">🤖</span>
+                    <Sparkles className="w-8 h-8 mr-3" />
                     <span className="text-xl font-semibold">AI-Powered Course</span>
                   </div>
                   <p className="text-purple-100 text-sm">
                     Let AI help you create a structured course from any topic. 
                     Just provide the topic, difficulty, and duration - we'll handle the rest!
                   </p>
-                  <div className="mt-3 text-xs text-purple-200">
-                    ✨ Auto-generates content • 📚 Structured modules • 🎯 Personalized quizzes
+                  <div className="mt-3 flex items-center justify-center gap-3 text-xs text-purple-200">
+                    <span className="flex items-center"><Sparkles className="w-3 h-3 mr-1" />Auto-generates</span>
+                    <span className="flex items-center"><BookOpen className="w-3 h-3 mr-1" />Structured</span>
+                    <span className="flex items-center"><Target className="w-3 h-3 mr-1" />Personalized</span>
                   </div>
                 </motion.button>
 
@@ -172,15 +175,17 @@ const CreateCourse = () => {
                   className="w-full p-6 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex items-center justify-center mb-2">
-                    <span className="text-3xl mr-3">✏️</span>
+                    <Edit3 className="w-8 h-8 mr-3" />
                     <span className="text-xl font-semibold">Manual Course Creation</span>
                   </div>
                   <p className="text-emerald-100 text-sm">
                     Create a course manually by adding your own videos and content. 
                     Perfect for existing playlists or custom content.
                   </p>
-                  <div className="mt-3 text-xs text-emerald-200">
-                    🎬 Add YouTube videos • 📝 Custom descriptions • 🎨 Full control
+                  <div className="mt-3 flex items-center justify-center gap-3 text-xs text-emerald-200">
+                    <span className="flex items-center"><Globe className="w-3 h-3 mr-1" />Add videos</span>
+                    <span className="flex items-center"><Edit3 className="w-3 h-3 mr-1" />Custom</span>
+                    <span className="flex items-center"><Target className="w-3 h-3 mr-1" />Full control</span>
                   </div>
                 </motion.button>
               </div>
@@ -233,24 +238,28 @@ const CreateCourse = () => {
 
           {/* Topic Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Select Topic
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {SUGGESTED_TOPICS.map(topic => (
-                <motion.button
-                  key={topic.id}
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setFormData({ ...formData, topic: topic.name })}
-                  className={`p-3 rounded-lg text-center ${topic.color} ${
-                    formData.topic === topic.name ? 'ring-2 ring-indigo-500' : ''
-                  }`}
-                >
-                  {topic.name}
-                </motion.button>
-              ))}
+              {SUGGESTED_TOPICS.map(topic => {
+                const IconComponent = topic.Icon;
+                return (
+                  <motion.button
+                    key={topic.id}
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setFormData({ ...formData, topic: topic.name })}
+                    className={`p-3 rounded-lg text-center flex flex-col items-center gap-2 ${topic.color} ${
+                      formData.topic === topic.name ? 'ring-2 ring-indigo-500' : ''
+                    } text-gray-800 dark:text-gray-200`}
+                  >
+                    <IconComponent className="w-5 h-5" />
+                    <span className="text-sm">{topic.name}</span>
+                  </motion.button>
+                );
+              })}
             </div>
             {errors.topic && (
               <p className="mt-1 text-sm text-red-600">{errors.topic}</p>

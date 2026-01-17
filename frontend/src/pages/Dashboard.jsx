@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext_simple';
 import { useCourses } from '../contexts/CourseContext';
 import LearningProfileModal from '../components/LearningProfileModal';
+import { Settings, Sprout, Rocket, Eye, Headphones, Target, Zap } from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(
@@ -202,16 +203,16 @@ const Dashboard = () => {
         type: 'study_tip',
         title: 'Take Your Time',
         message: 'Break complex topics into smaller chunks. Consider 15-20 minute study sessions.',
-        icon: '🐌',
-        color: 'bg-blue-100'
+        Icon: Sprout,
+        color: 'bg-blue-100 dark:bg-blue-900/30'
       });
     } else if (profile.pace === 'fast') {
       recommendations.push({
         type: 'challenge',
         title: 'Ready for More?',
         message: 'Try advanced courses or increase your daily study goal.',
-        icon: '🚀',
-        color: 'bg-green-100'
+        Icon: Rocket,
+        color: 'bg-green-100 dark:bg-green-900/30'
       });
     }
     
@@ -221,16 +222,16 @@ const Dashboard = () => {
         type: 'resource',
         title: 'Visual Learning Resources',
         message: 'Look for courses with diagrams, mind maps, and visual demonstrations.',
-        icon: '👁️',
-        color: 'bg-purple-100'
+        Icon: Eye,
+        color: 'bg-purple-100 dark:bg-purple-900/30'
       });
     } else if (profile.style === 'auditory') {
       recommendations.push({
         type: 'resource',
         title: 'Audio Learning',
         message: 'Enable audio descriptions and try listening to course content while walking.',
-        icon: '🎧',
-        color: 'bg-yellow-100'
+        Icon: Headphones,
+        color: 'bg-yellow-100 dark:bg-yellow-900/30'
       });
     }
     
@@ -240,16 +241,16 @@ const Dashboard = () => {
         type: 'guidance',
         title: 'Start With Basics',
         message: 'Focus on foundational concepts. Take your time with each module.',
-        icon: '🌱',
-        color: 'bg-emerald-100'
+        Icon: Sprout,
+        color: 'bg-emerald-100 dark:bg-emerald-900/30'
       });
     } else if (profile.difficulty === 'advanced') {
       recommendations.push({
         type: 'challenge',
         title: 'Advanced Challenges',
         message: 'Try building projects while learning. Consider teaching others.',
-        icon: '⚡',
-        color: 'bg-red-100'
+        Icon: Zap,
+        color: 'bg-red-100 dark:bg-red-900/30'
       });
     }
     
@@ -288,21 +289,21 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Welcome Section */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
-            <p className="mt-2 text-gray-600">Track your progress and continue learning</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Welcome back, {user?.name}!</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Track your progress and continue learning</p>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowProfileModal(true)}
-            className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors flex items-center space-x-2"
+            className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors flex items-center space-x-2"
           >
-            <span>⚙️</span>
+            <Settings className="w-4 h-4" />
             <span>Customize Learning</span>
           </motion.button>
         </div>
@@ -311,46 +312,46 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-xl shadow-sm"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
           >
-            <h3 className="text-lg font-semibold text-gray-900">Total Courses</h3>
-            <p className="text-3xl font-bold text-indigo-600 mt-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Total Courses</h3>
+            <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
               {isLoading ? '-' : dashboardData.stats.totalCourses}
             </p>
-            <p className="text-sm text-gray-500 mt-2">Enrolled courses</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Enrolled courses</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-xl shadow-sm"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
           >
-            <h3 className="text-lg font-semibold text-gray-900">Completed</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Completed</h3>
+            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
               {isLoading ? '-' : dashboardData.stats.completedCourses}
             </p>
-            <p className="text-sm text-gray-500 mt-2">Finished courses</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Finished courses</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-xl shadow-sm"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
           >
-            <h3 className="text-lg font-semibold text-gray-900">Study Time</h3>
-            <p className="text-3xl font-bold text-indigo-600 mt-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Study Time</h3>
+            <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
               {isLoading ? '-' : `${(dashboardData.stats.totalStudyTime / 60).toFixed(1)}h`}
             </p>
-            <p className="text-sm text-gray-500 mt-2">Total hours studied</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Total hours studied</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-xl shadow-sm"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
           >
-            <h3 className="text-lg font-semibold text-gray-900">Study Streak</h3>
-            <p className="text-3xl font-bold text-orange-600 mt-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Study Streak</h3>
+            <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">
               {isLoading ? '-' : `${dashboardData.stats.streak} days`}
             </p>
-            <p className="text-sm text-gray-500 mt-2">Current streak</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Current streak</p>
           </motion.div>
         </div>
 
@@ -358,17 +359,17 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="bg-white p-6 rounded-xl shadow-sm"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Progress</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Weekly Progress</h3>
             <Line data={dashboardData.learningProgress} options={{ responsive: true }} />
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="bg-white p-6 rounded-xl shadow-sm"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Completion</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Course Completion</h3>
             <Doughnut data={dashboardData.completionRate} options={{ responsive: true }} />
           </motion.div>
         </div>
@@ -376,35 +377,41 @@ const Dashboard = () => {
         {/* Personalized Recommendations */}
         {personalizedRecommendations.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              🎯 Personalized for Your Learning Style
-            </h2>
+            <div className="flex items-center mb-6">
+              <Target className="w-6 h-6 text-primary-600 dark:text-primary-400 mr-2" />
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Personalized for Your Learning Style
+              </h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {personalizedRecommendations.map((rec, index) => (
-                <motion.div
-                  key={index}
-                  whileHover={{ scale: 1.03 }}
-                  className={`${rec.color} p-6 rounded-xl shadow-sm border border-gray-100`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <span className="text-2xl">{rec.icon}</span>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">{rec.title}</h3>
-                      <p className="text-gray-700 text-sm leading-relaxed">{rec.message}</p>
-                      <span className="inline-block mt-3 px-3 py-1 bg-white bg-opacity-70 rounded-full text-xs font-medium text-gray-600">
-                        {rec.type.replace('_', ' ').toUpperCase()}
-                      </span>
+              {personalizedRecommendations.map((rec, index) => {
+                const IconComponent = rec.Icon;
+                return (
+                  <motion.div
+                    key={index}
+                    whileHover={{ scale: 1.03 }}
+                    className={`${rec.color} p-6 rounded-xl shadow-sm border border-gray-100 dark:border-dark-700`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <IconComponent className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{rec.title}</h3>
+                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{rec.message}</p>
+                        <span className="inline-block mt-3 px-3 py-1 bg-white dark:bg-dark-700 bg-opacity-70 rounded-full text-xs font-medium text-gray-600 dark:text-gray-400">
+                          {rec.type.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* Recommended Videos */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Recommended for You</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Recommended for You</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {recommendedVideos.map(video => (
               <motion.div
@@ -413,7 +420,7 @@ const Dashboard = () => {
                   scale: 1.03,
                   transition: { duration: 0.2 }
                 }}
-                className="bg-white rounded-xl shadow-sm overflow-hidden"
+                className="bg-white dark:bg-dark-800 rounded-xl shadow-sm overflow-hidden border border-transparent dark:border-dark-700"
               >
                 <div className="relative">
                   <img
@@ -426,10 +433,10 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 line-clamp-2">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">
                     {video.title}
                   </h3>
-                  <div className="flex items-center mt-2 text-sm text-gray-600">
+                  <div className="flex items-center mt-2 text-sm text-gray-600 dark:text-gray-400">
                     <span>{video.views}</span>
                     <span className="mx-1">•</span>
                     <span>{video.timestamp}</span>

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext_simple';
 import { useCourse } from '../contexts/CourseContext';
 import toast from 'react-hot-toast';
 import { AI_SERVICE_URL } from '../config/api';
+import { Bot, BookOpen, BarChart3, Clock, Sparkles, CheckCircle, GraduationCap, Lightbulb, Award } from 'lucide-react';
 
 const AutomatedCourseGenerator = () => {
   const navigate = useNavigate();
@@ -336,69 +337,72 @@ const AutomatedCourseGenerator = () => {
             className="space-y-6"
           >
             <div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                🎯 Ready to Generate Your Perfect Course?
-              </h3>
+              <div className="flex items-center mb-4">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 mr-2" />
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+                  Ready to Generate Your Perfect Course?
+                </h3>
+              </div>
               
-              <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+              <div className="bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-lg p-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-medium text-gray-800 flex items-center">
-                      <span className="mr-2">📚</span> Topic
+                    <h4 className="font-medium text-gray-800 dark:text-gray-200 flex items-center">
+                      <BookOpen className="w-4 h-4 mr-2" /> Topic
                     </h4>
-                    <p className="text-gray-600 font-semibold">{courseData.topic}</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-semibold">{courseData.topic}</p>
                   </div>
                   
                   <div>
-                    <h4 className="font-medium text-gray-800 flex items-center">
-                      <span className="mr-2">📊</span> Level
+                    <h4 className="font-medium text-gray-800 dark:text-gray-200 flex items-center">
+                      <BarChart3 className="w-4 h-4 mr-2" /> Level
                     </h4>
-                    <p className="text-gray-600 font-semibold capitalize">{courseData.difficulty}</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-semibold capitalize">{courseData.difficulty}</p>
                   </div>
                   
                   <div>
-                    <h4 className="font-medium text-gray-800 flex items-center">
-                      <span className="mr-2">⏱️</span> Duration
+                    <h4 className="font-medium text-gray-800 dark:text-gray-200 flex items-center">
+                      <Clock className="w-4 h-4 mr-2" /> Duration
                     </h4>
-                    <p className="text-gray-600 font-semibold">{courseData.duration}</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-semibold">{courseData.duration}</p>
                   </div>
                   
                   <div>
-                    <h4 className="font-medium text-gray-800 flex items-center">
-                      <span className="mr-2">🤖</span> Generation Method
+                    <h4 className="font-medium text-gray-800 dark:text-gray-200 flex items-center">
+                      <Bot className="w-4 h-4 mr-2" /> Generation Method
                     </h4>
-                    <p className="text-gray-600 font-semibold">AI-Powered</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-semibold">AI-Powered</p>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border border-green-200">
-                <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-                  <span className="mr-2">🚀</span> What You'll Get:
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800">
+                <h4 className="font-semibold text-green-800 dark:text-green-300 mb-3 flex items-center">
+                  <Sparkles className="w-5 h-5 mr-2" /> What You'll Get:
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-green-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-green-700 dark:text-green-300">
                   <div className="flex items-start">
-                    <span className="mr-2 mt-0.5 text-yellow-500">⭐</span>
+                    <GraduationCap className="w-4 h-4 mr-2 mt-0.5 text-primary-500" />
                     <span>Complete learning roadmap</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-2 mt-0.5 text-yellow-500">⭐</span>
+                    <BookOpen className="w-4 h-4 mr-2 mt-0.5 text-primary-500" />
                     <span>Curated video lessons</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-2 mt-0.5 text-yellow-500">⭐</span>
+                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-primary-500" />
                     <span>Interactive quizzes</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-2 mt-0.5 text-yellow-500">⭐</span>
+                    <Award className="w-4 h-4 mr-2 mt-0.5 text-primary-500" />
                     <span>Study flashcards</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-2 mt-0.5 text-yellow-500">⭐</span>
+                    <Lightbulb className="w-4 h-4 mr-2 mt-0.5 text-primary-500" />
                     <span>Lesson summaries</span>
                   </div>
                   <div className="flex items-start">
-                    <span className="mr-2 mt-0.5 text-yellow-500">⭐</span>
+                    <BarChart3 className="w-4 h-4 mr-2 mt-0.5 text-primary-500" />
                     <span>Key concepts & keywords</span>
                   </div>
                 </div>
@@ -419,14 +423,17 @@ const AutomatedCourseGenerator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            🤖 AI Course Generator
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <div className="flex items-center justify-center mb-4">
+            <Bot className="w-10 h-10 text-primary-600 dark:text-primary-400 mr-3" />
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              AI Course Generator
+            </h1>
+          </div>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Tell us what you want to learn, and our AI will create the perfect learning roadmap 
             with curated videos, quizzes, and everything you need to master any topic.
           </p>
@@ -453,7 +460,7 @@ const AutomatedCourseGenerator = () => {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-700 p-8">
           <AnimatePresence mode="wait">
             {!isGenerating ? (
               renderStep()
@@ -508,9 +515,10 @@ const AutomatedCourseGenerator = () => {
               ) : (
                 <button
                   onClick={generateCourse}
-                  className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg hover:from-green-600 hover:to-blue-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold shadow-lg transform hover:scale-105 transition-all"
+                  className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg hover:from-green-600 hover:to-blue-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold shadow-lg transform hover:scale-105 transition-all flex items-center gap-2"
                 >
-                  🎆 Generate My Perfect Course
+                  <Sparkles className="w-5 h-5" />
+                  Generate My Perfect Course
                 </button>
               )}
             </div>

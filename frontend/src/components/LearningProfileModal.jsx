@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext_simple';
 import toast from 'react-hot-toast';
+import { Gauge, Eye, Headphones, BookText, Hand, Sprout, TreePine, Settings, BarChart3 } from 'lucide-react';
 
 const LearningProfileModal = ({ isOpen, onClose, onUpdate }) => {
   const { user } = useAuth();
@@ -82,13 +83,13 @@ const LearningProfileModal = ({ isOpen, onClose, onUpdate }) => {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-2xl"
+          className="bg-white dark:bg-dark-800 rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-2xl"
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Personalize Your Learning</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Personalize Your Learning</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -99,103 +100,116 @@ const LearningProfileModal = ({ isOpen, onClose, onUpdate }) => {
           <div className="space-y-6">
             {/* Learning Pace */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Learning Pace 🏃‍♂️
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                <Gauge className="w-4 h-4 mr-2" />
+                Learning Pace
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { value: 'slow', label: 'Steady & Thorough', icon: '🐌', desc: 'Take time to deeply understand' },
-                  { value: 'medium', label: 'Balanced', icon: '🚶', desc: 'Regular steady progress' },
-                  { value: 'fast', label: 'Quick & Intensive', icon: '🏃', desc: 'Fast-paced learning' }
-                ].map((option) => (
-                  <motion.button
-                    key={option.value}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setProfile({ ...profile, pace: option.value })}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      profile.pace === option.value
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{option.icon}</div>
-                    <div className="font-medium text-gray-900">{option.label}</div>
-                    <div className="text-xs text-gray-500 mt-1">{option.desc}</div>
-                  </motion.button>
-                ))}
+                  { value: 'slow', label: 'Steady & Thorough', Icon: Sprout, desc: 'Take time to deeply understand' },
+                  { value: 'medium', label: 'Balanced', Icon: TreePine, desc: 'Regular steady progress' },
+                  { value: 'fast', label: 'Quick & Intensive', Icon: Gauge, desc: 'Fast-paced learning' }
+                ].map((option) => {
+                  const IconComponent = option.Icon;
+                  return (
+                    <motion.button
+                      key={option.value}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setProfile({ ...profile, pace: option.value })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        profile.pace === option.value
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                          : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                      }`}
+                    >
+                      <IconComponent className="w-6 h-6 mb-1 mx-auto text-gray-700 dark:text-gray-300" />
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{option.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{option.desc}</div>
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Learning Style */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Learning Style 🧠
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                <Settings className="w-4 h-4 mr-2" />
+                Learning Style
               </label>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { value: 'visual', label: 'Visual', icon: '👁️', desc: 'Learn through images, diagrams, videos' },
-                  { value: 'auditory', label: 'Auditory', icon: '🎧', desc: 'Learn through listening and discussion' },
-                  { value: 'reading', label: 'Reading/Writing', icon: '📚', desc: 'Learn through text and writing' },
-                  { value: 'kinesthetic', label: 'Hands-on', icon: '✋', desc: 'Learn through doing and practice' }
-                ].map((option) => (
-                  <motion.button
-                    key={option.value}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setProfile({ ...profile, style: option.value })}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      profile.style === option.value
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{option.icon}</div>
-                    <div className="font-medium text-gray-900">{option.label}</div>
-                    <div className="text-xs text-gray-500 mt-1">{option.desc}</div>
-                  </motion.button>
-                ))}
+                  { value: 'visual', label: 'Visual', Icon: Eye, desc: 'Learn through images, diagrams, videos' },
+                  { value: 'auditory', label: 'Auditory', Icon: Headphones, desc: 'Learn through listening and discussion' },
+                  { value: 'reading', label: 'Reading/Writing', Icon: BookText, desc: 'Learn through text and writing' },
+                  { value: 'kinesthetic', label: 'Hands-on', Icon: Hand, desc: 'Learn through doing and practice' }
+                ].map((option) => {
+                  const IconComponent = option.Icon;
+                  return (
+                    <motion.button
+                      key={option.value}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setProfile({ ...profile, style: option.value })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        profile.style === option.value
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                          : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                      }`}
+                    >
+                      <IconComponent className="w-6 h-6 mb-1 mx-auto text-gray-700 dark:text-gray-300" />
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{option.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{option.desc}</div>
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Current Level */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Current Level 📊
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Current Level
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { value: 'beginner', label: 'Beginner', icon: '🌱', desc: 'New to most topics' },
-                  { value: 'intermediate', label: 'Intermediate', icon: '🌿', desc: 'Some experience' },
-                  { value: 'advanced', label: 'Advanced', icon: '🌳', desc: 'Experienced learner' }
-                ].map((option) => (
-                  <motion.button
-                    key={option.value}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setProfile({ ...profile, difficulty: option.value })}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      profile.difficulty === option.value
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{option.icon}</div>
-                    <div className="font-medium text-gray-900">{option.label}</div>
-                    <div className="text-xs text-gray-500 mt-1">{option.desc}</div>
-                  </motion.button>
-                ))}
+                  { value: 'beginner', label: 'Beginner', Icon: Sprout, desc: 'New to most topics' },
+                  { value: 'intermediate', label: 'Intermediate', Icon: TreePine, desc: 'Some experience' },
+                  { value: 'advanced', label: 'Advanced', Icon: BarChart3, desc: 'Experienced learner' }
+                ].map((option) => {
+                  const IconComponent = option.Icon;
+                  return (
+                    <motion.button
+                      key={option.value}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setProfile({ ...profile, difficulty: option.value })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        profile.difficulty === option.value
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                          : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                      }`}
+                    >
+                      <IconComponent className="w-6 h-6 mb-1 mx-auto text-gray-700 dark:text-gray-300" />
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{option.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{option.desc}</div>
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Study Preferences */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Study Preferences ⚙️
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                <Settings className="w-4 h-4 mr-2" />
+                Study Preferences
               </label>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">
+                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
                     Preferred Session Length: {profile.preferences.sessionLength} minutes
                   </label>
                   <input
@@ -241,13 +255,13 @@ const LearningProfileModal = ({ isOpen, onClose, onUpdate }) => {
           </div>
 
           <div className="flex justify-between items-center mt-8">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               Your preferences help us personalize your learning experience
             </div>
             <div className="space-x-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-dark-600 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
               >
                 Cancel
               </button>
