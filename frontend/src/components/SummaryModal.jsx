@@ -21,21 +21,24 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
     setError(null);
     
     try {
-      // Extract captions client-side
-      const transcript = await extractYouTubeCaptions(videoId);
+      let transcript = null;
       
-      if (!transcript || transcript.length < 100) {
-        throw new Error('Could not extract sufficient caption data');
+      // Try browser-side extraction first
+      try {
+        transcript = await extractYouTubeCaptions(videoId);
+        console.log('✅ Browser extraction successful');
+      } catch (browserError) {
+        console.log('⚠️ Browser extraction failed, letting backend handle it');
       }
       
-      // Send pre-extracted transcript to backend
+      // Send to backend
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/summary`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          transcript: transcript, // Send extracted text
+          transcript: transcript,
           videoId: videoId,
           title: videoTitle,
           format: 'detailed'

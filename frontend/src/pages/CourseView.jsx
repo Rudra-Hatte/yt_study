@@ -45,16 +45,19 @@ const CourseView = () => {
       setIsGenerating(true);
       
       const videoId = course.videos[currentVideo].youtubeId;
+      let transcript = null;
       
-      // Extract captions client-side (browser session - bypasses blocks!)
-      toast.loading('Extracting video captions...');
-      const transcript = await extractYouTubeCaptions(videoId);
-      
-      if (!transcript || transcript.length < 100) {
-        throw new Error('Could not extract sufficient caption data');
+      // Try browser-side extraction first
+      try {
+        toast.loading('Extracting captions from browser...');
+        transcript = await extractYouTubeCaptions(videoId);
+        console.log('✅ Browser extraction successful');
+      } catch (browserError) {
+        console.log('⚠️ Browser extraction failed, letting backend handle it');
+        // Continue without transcript - backend will extract
       }
       
-      // Send pre-extracted transcript to backend
+      // Send to backend (with or without pre-extracted transcript)
       toast.loading('Generating quiz...');
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/quiz`, {
         method: 'POST',
@@ -62,7 +65,7 @@ const CourseView = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          transcript: transcript, // Send extracted text, not videoId
+          transcript: transcript, // May be null - backend will handle
           videoId: videoId,
           title: course.videos[currentVideo].title,
           numQuestions: 5,
@@ -98,16 +101,18 @@ const CourseView = () => {
       setIsGenerating(true);
       
       const videoId = course.videos[currentVideo].youtubeId;
+      let transcript = null;
       
-      // Extract captions client-side
-      toast.loading('Extracting video captions...');
-      const transcript = await extractYouTubeCaptions(videoId);
-      
-      if (!transcript || transcript.length < 100) {
-        throw new Error('Could not extract sufficient caption data');
+      // Try browser-side extraction first
+      try {
+        toast.loading('Extracting captions from browser...');
+        transcript = await extractYouTubeCaptions(videoId);
+        console.log('✅ Browser extraction successful');
+      } catch (browserError) {
+        console.log('⚠️ Browser extraction failed, letting backend handle it');
       }
       
-      // Send pre-extracted transcript to backend
+      // Send to backend
       toast.loading('Generating flashcards...');
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/flashcards`, {
         method: 'POST',
@@ -115,7 +120,7 @@ const CourseView = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          transcript: transcript, // Send extracted text
+          transcript: transcript,
           videoId: videoId,
           title: course.videos[currentVideo].title,
           numCards: 10
