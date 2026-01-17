@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext_simple';
+import { AI_SERVICE_URL } from '../config/api';
 import toast from 'react-hot-toast';
 
 const AIChatBot = () => {
@@ -26,7 +27,7 @@ const AIChatBot = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/ai/chat', {
+      const response = await fetch(`${AI_SERVICE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

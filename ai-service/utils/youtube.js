@@ -118,30 +118,7 @@ const getVideoTranscript = async (videoId) => {
   
   // All methods failed
   console.error('❌ All transcript methods failed');
-  throw new Error('Unable to fetch video transcript. The video may not have captions available or they may be disabled by the creator.');
-};
-    const metadata = await getVideoMetadata(videoId);
-    
-    if (metadata && metadata.description && metadata.description.length > 200) {
-      console.log(`✅ Using video description as fallback. Length: ${metadata.description.length} characters`);
-      console.log(`⚠️ Note: This is based on video description, not actual transcript`);
-      
-      return `Video Title: ${metadata.title}\n\nDescription: ${metadata.description}`;
-    }
-  } catch (error) {
-    console.log(`⚠️ Method 5 failed: ${error.message}`);
-  }
-
-  // If all methods fail
-  console.error('❌ All transcript extraction methods failed');
-  throw new Error(
-    'Unable to access video content. This could be due to: ' +
-    '1) Captions are disabled by the creator, ' +
-    '2) Video has age restrictions, ' +
-    '3) Video is region-locked, or ' +
-    '4) Captions are in a format we cannot access. ' +
-    'Please try a different video.'
-  );
+  throw new Error('This video does not have captions/subtitles available. Please try a different video with captions enabled.');
 };
 
 // Get video metadata using YouTube API
