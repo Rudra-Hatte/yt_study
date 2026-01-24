@@ -13,7 +13,18 @@ export const AuthProvider = ({ children }) => {
     try {
       const savedUser = localStorage.getItem('user');
       if (savedUser) {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        
+        // Migration: Add token to old users who don't have it
+        if (!parsedUser.token) {
+          console.log('⚠️ Old user data detected, adding mock token...');
+          const mockToken = 'mock-jwt-token-' + Date.now();
+          parsedUser.token = mockToken;
+          localStorage.setItem('user', JSON.stringify(parsedUser));
+          localStorage.setItem('token', mockToken);
+        }
+        
+        setUser(parsedUser);
       }
     } catch (error) {
       console.error('Error loading saved user:', error);
