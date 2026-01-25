@@ -14,20 +14,47 @@ export const AuthProvider = ({ children }) => {
       const savedUser = localStorage.getItem('user');
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
+        console.log('📦 Loaded user from storage:', parsedUser);
         
-        // Migration: Add token to old users who don't have it
+        // Migration: Fix incomplete user data
+        let needsUpdate = false;
+        
+        // Add token if missing
         if (!parsedUser.token) {
-          console.log('⚠️ Old user data detected, adding mock token...');
+          console.log('⚠️ No token found, generating mock token...');
           const mockToken = 'mock-jwt-token-' + Date.now();
           parsedUser.token = mockToken;
+          needsUpdate = true;
+        }
+        
+        // Add name if missing
+        if (!parsedUser.name || parsedUser.name === 'undefined') {
+          console.log('⚠️ No name found, setting default name...');
+          parsedUser.name = parsedUser.email ? parsedUser.email.split('@')[0] : 'User';
+          needsUpdate = true;
+        }
+        
+        // Add email if missing
+        if (!parsedUser.email) {
+          console.log('⚠️ No email found, setting default...');
+          parsedUser.email = 'user@example.com';
+          needsUpdate = true;
+        }
+        
+        // Save updated user data
+        if (needsUpdate) {
+          console.log('✅ Migrated user data:', parsedUser);
           localStorage.setItem('user', JSON.stringify(parsedUser));
-          localStorage.setItem('token', mockToken);
+          localStorage.setItem('token', parsedUser.token);
         }
         
         setUser(parsedUser);
       }
     } catch (error) {
       console.error('Error loading saved user:', error);
+      // Clear corrupted data
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
     }
     setLoading(false);
   }, []);

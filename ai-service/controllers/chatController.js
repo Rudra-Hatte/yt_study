@@ -67,11 +67,32 @@ Context: ${context || 'General study help'}
   } catch (error) {
     console.error('AI Chat error:', error);
     console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      status: error.status
+    });
     
-    res.status(500).json({
+    // Check if it's a Gemini API error
+    let errorMessage = 'Failed to generate response';
+    let statusCode = 500;
+    
+    if (error.message?.includes('API key')) {
+      errorMessage = 'API key configuration error. Please check your Gemini API keys.';
+      statusCode = 503;
+    } else if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
+      errorMessage = 'API rate limit exceeded. Please try again in a moment.';
+      statusCode = 429;
+    } else if (error.status === 400) {
+      errorMessage = 'Invalid request to AI service.';
+      statusCode = 400;
+    }
+    
+    res.status(statusCode).json({
       success: false,
-      error: 'Failed to generate response',
-      details: error.message
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
