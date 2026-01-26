@@ -44,7 +44,31 @@ const AIChatBot = () => {
       console.log('Response status:', response.status);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Response:', errorData);
+        
+        let errorMessage = 'Sorry, I encountered an error. ';
+        
+        if (response.status === 503) {
+          errorMessage += 'The AI service is temporarily unavailable. API keys may need to be configured.';
+        } else if (response.status === 429) {
+          errorMessage += 'Too many requests. Please wait a moment and try again.';
+        } else if (response.status === 500) {
+          errorMessage += 'Internal server error. Please try again later.';
+        } else {
+          errorMessage += `Error code: ${response.status}`;
+        }
+        
+        if (errorData.error) {
+          errorMessage += ` (${errorData.error})`;
+        }
+        
+        setMessages(prev => [...prev, { 
+          type: 'bot', 
+          text: errorMessage
+        }]);
+        setIsLoading(false);
+        return;
       }
 
       const data = await response.json();

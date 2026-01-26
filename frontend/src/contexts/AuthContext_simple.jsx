@@ -16,6 +16,16 @@ export const AuthProvider = ({ children }) => {
         const parsedUser = JSON.parse(savedUser);
         console.log('📦 Loaded user from storage:', parsedUser);
         
+        // CRITICAL: If user data is corrupted (no token AND no name), force logout
+        if ((!parsedUser.token || parsedUser.token === 'undefined') && 
+            (!parsedUser.name || parsedUser.name === 'undefined' || parsedUser.name === 'Unknown')) {
+          console.error('🚨 CORRUPTED USER DATA DETECTED! Forcing logout...');
+          localStorage.clear();
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
         // Migration: Fix incomplete user data
         let needsUpdate = false;
         
@@ -53,8 +63,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Error loading saved user:', error);
       // Clear corrupted data
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      console.log('🧹 Clearing corrupted localStorage...');
+      localStorage.clear();
     }
     setLoading(false);
   }, []);
