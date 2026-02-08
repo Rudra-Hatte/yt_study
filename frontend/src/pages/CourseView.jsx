@@ -2,16 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useCourse } from '../contexts/CourseContext';
-import { getQuizForVideo } from '../utils/quizData';
-import { getFlashcardsForVideo } from '../utils/flashcardData';
 import QuizModal from '../components/QuizModal';
 import FlashcardModal from '../components/FlashcardModal';
 import SummaryModal from '../components/SummaryModal';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { AI_SERVICE_URL } from '../config/api';
-import { extractYouTubeCaptions } from '../utils/youtubeCaptions';
-import { transcribeWithUserHelp } from '../utils/speechToText';
-import { FileText, CreditCard, ClipboardCheck, Play, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CourseView = () => {
@@ -46,77 +41,61 @@ const CourseView = () => {
       setGeneratingType('quiz');
       setIsGenerating(true);
       
+      // Get the video ID from current video
       const videoId = course.videos[currentVideo].youtubeId;
-      let transcript = null;
+      const videoTitle = course.videos[currentVideo].title;
       
-      // Try browser-side extraction first
+      console.log('🎬 Sending video to Gemini:', videoId);
+      toast.loading('Generating quiz from video...');
+      
+      // Try to get quiz from Gemini API
       try {
-        toast.loading('Analyzing video content...');
-        transcript = await extractYouTubeCaptions(videoId);
-        console.log('? Browser extraction successful');
-      } catch (browserError) {
-        console.log('?? Browser extraction failed, using speech recognition...');
+        const response = await fetch(`${AI_SERVICE_URL}/api/ai/quiz`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            videoId: videoId,
+            title: videoTitle,
+            numQuestions: 10,
+            difficulty: 'medium'
+          }),
+        });
+
+        const result = await response.json();
+        console.log('📝 Quiz Response from Gemini:', result);
         
-        // Silently fallback to speech-to-text without revealing the issue
-        try {
-          toast.dismiss();
-          toast.loading('?? Please watch the complete video for best results!');
+        if (result.success && result.data) {
+          // Extract questions array from response
+          const questions = result.data.questions || result.data;
+          console.log('✅ Quiz questions received:', questions);
           
-          transcript = await transcribeWithUserHelp(
-            (progress) => console.log(`Transcription progress: ${progress}%`),
-            (status) => {
-              // Show friendly message instead of technical details
-              if (status.includes('Transcribing')) {
-                toast.loading('?? Capturing video content... Keep watching!');
-              } else {
-                toast.loading(status);
-              }
-            }
-          );
-          
-          console.log('? Speech-to-text transcription successful!');
-        } catch (speechError) {
-          console.log('?? Speech-to-text also failed, letting backend try');
+          if (Array.isArray(questions) && questions.length > 0) {
+            setCurrentQuiz(questions);
+            setShowQuiz(true);
+            toast.dismiss();
+            toast.success('Quiz generated successfully!');
+          } else {
+            throw new Error('No questions in response');
+          }
+        } else {
+          throw new Error(result.error || 'Failed to generate quiz');
         }
+      } catch (apiError) {
+        console.error('❌ API Error:', apiError);
+        throw apiError;
       }
       
-      // Send to backend (with or without pre-extracted transcript)
-      toast.loading('Generating quiz...');
-      const response = await fetch(`${AI_SERVICE_URL}/api/ai/quiz`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          transcript: transcript, // May be null - backend will handle
-          videoId: videoId,
-          title: course.videos[currentVideo].title,
-          numQuestions: 5,
-          difficulty: 'medium'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate quiz');
-      }
-
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        setCurrentQuiz(result.data);
-        setShowQuiz(true);
-        toast.success('Quiz generated successfully!');
-      } else {
-        throw new Error(result.error || 'Failed to generate quiz');
-      }
     } catch (error) {
-      console.error('Error generating quiz:', error);
+      console.error('❌ Error generating quiz:', error);
+      toast.dismiss();
       toast.error('Failed to generate quiz. Please try again.');
     } finally {
       setIsGenerating(false);
       setGeneratingType(null);
     }
-  };
+  }
 
   const handleGenerateFlashcards = async () => {
     try {
