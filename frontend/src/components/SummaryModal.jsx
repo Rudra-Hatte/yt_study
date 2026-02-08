@@ -167,6 +167,7 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
                 </div>
 
                 {/* Main Concepts */}
+                {summary.mainConcepts && summary.mainConcepts.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <span className="mr-2">🎯</span> Main Concepts
@@ -182,8 +183,10 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* Key Points */}
+                {summary.keyPoints && summary.keyPoints.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <span className="mr-2">💡</span> Key Points
@@ -197,8 +200,10 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* Keywords */}
+                {summary.keywords && summary.keywords.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <span className="mr-2">🏷️</span> Important Keywords
@@ -214,8 +219,10 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* Practical Applications */}
+                {summary.practicalApplications && summary.practicalApplications.length > 0 && (
                 <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
                   <h3 className="text-lg font-semibold text-yellow-800 mb-3 flex items-center">
                     <span className="mr-2">🛠️</span> Practical Applications
@@ -229,8 +236,10 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
                     ))}
                   </div>
                 </div>
+                )}
 
                 {/* Next Steps */}
+                {summary.nextSteps && summary.nextSteps.length > 0 && (
                 <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
                   <h3 className="text-lg font-semibold text-purple-800 mb-3 flex items-center">
                     <span className="mr-2">🚀</span> Recommended Next Steps
@@ -244,6 +253,7 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
                     ))}
                   </div>
                 </div>
+                )}
               </div>
             )}
           </div>

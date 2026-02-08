@@ -136,7 +136,9 @@ const CourseView = () => {
       const result = await response.json();
       
       if (result.success && result.data) {
-        setCurrentFlashcards(result.data);
+        // Extract flashcards array from the response
+        const flashcardsArray = result.data.flashcards || result.data;
+        setCurrentFlashcards(flashcardsArray);
         setShowFlashcards(true);
         toast.success('Flashcards generated successfully!');
       } else {

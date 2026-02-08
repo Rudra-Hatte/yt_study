@@ -1,38 +1,23 @@
 const { generateFlashcards } = require('../services/gemini/flashcardGenerator');
-const { getVideoTranscript } = require('../utils/youtube');
 
 // Generate flashcards from a video
 exports.createFlashcards = async (req, res, next) => {
   try {
-    const { videoId, transcript, numCards = 10, title } = req.body;
+    const { videoId, numCards = 10, title } = req.body;
     
     console.log('🃏 Flashcard generation requested for video:', videoId);
     
-    // Accept transcript from frontend (browser-extracted) or fall back to server extraction
-    let videoTranscript = transcript;
-    
-    if (!videoTranscript) {
-      console.log('📥 No transcript provided, attempting server-side extraction...');
-      if (!videoId) {
-        return res.status(400).json({ success: false, error: 'Video ID or transcript is required' });
-      }
-      const { getVideoTranscript } = require('../utils/youtube');
-      videoTranscript = await getVideoTranscript(videoId);
-    } else {
-      console.log('✅ Using browser-extracted transcript:', videoTranscript.length, 'characters');
+    if (!videoId) {
+      return res.status(400).json({ success: false, error: 'Video ID is required' });
     }
     
-    if (!videoTranscript || videoTranscript.length < 100) {
-      console.error('❌ Transcript too short or unavailable');
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Unable to get sufficient transcript content. Video may not have captions available.' 
-      });
+    if (!title) {
+      return res.status(400).json({ success: false, error: 'Video title is required' });
     }
     
-    // Generate flashcards
-    console.log('🤖 Generating flashcards with Gemini...');
-    const flashcards = await generateFlashcards(videoTranscript, title || 'YouTube Video', numCards);
+    // Generate flashcards using Groq AI (no transcript needed)
+    console.log('🤖 Generating flashcards with Groq AI...');
+    const flashcards = await generateFlashcards(videoId, title, numCards);
     
     console.log('✅ Flashcards generated successfully');
     
