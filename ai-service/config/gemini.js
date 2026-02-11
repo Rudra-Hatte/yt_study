@@ -31,6 +31,7 @@ const safetySettings = [
 // Get Gemini Pro model
 const getGeminiModel = () => {
   const genAI = getGenAI();
+  // Using gemini-2.0-flash model (gemini-pro was deprecated)
   return genAI.getGenerativeModel({ 
     model: "gemini-2.0-flash",
     safetySettings

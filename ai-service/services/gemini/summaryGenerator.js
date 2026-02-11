@@ -1,70 +1,179 @@
-const { getGeminiModel } = require('../../config/gemini');
+const Groq = require('groq-sdk');
+
+// Initialize Groq client
+const getGroqClient = () => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not configured');
+  }
+  return new Groq({ apiKey });
+};
 
 /**
- * Generate summary from video transcript
- * @param {string} transcript - The video transcript text
+ * Generate summary using Groq AI (Llama 3.3) based on video title
+ * @param {string} videoId - The YouTube video ID
  * @param {string} title - The video title
  * @param {string} format - Summary format (brief, detailed, bullet)
  * @returns {Object} Summary and key points
  */
-async function generateSummary(transcript, title, format = 'detailed') {
+async function generateSummary(videoId, title, format = 'detailed') {
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  console.log('📝 Generating summary for video:', videoUrl);
+  console.log('📝 Title:', title);
+  
+  let formatInstructions = '';
+  if (format === 'brief') {
+    formatInstructions = 'Create a concise summary in 3-4 sentences.';
+  } else if (format === 'bullet') {
+    formatInstructions = 'Create a bullet-point summary with the main points.';
+  } else {
+    formatInstructions = 'Create a detailed summary in 5-7 paragraphs covering the main topics.';
+  }
+  
+  const prompt = `You are an expert educational content summarizer. Based on the YouTube video title and topic, ${formatInstructions}
+
+Video Title: "${title}"
+Video URL: ${videoUrl}
+
+Create a comprehensive educational summary. Return ONLY valid JSON with NO markdown, NO code blocks.
+
+JSON structure (keep responses concise to avoid truncation):
+{"summary":"2-3 sentence overview","mainConcepts":["concept1","concept2","concept3"],"keyPoints":["point1","point2","point3"],"keywords":["word1","word2","word3"],"practicalApplications":["app1","app2"],"nextSteps":["step1","step2"],"difficulty":"beginner"}
+
+Where difficulty is: beginner, intermediate, or advanced`;
+
   try {
-    const model = getGeminiModel();
+    console.log('🤖 Calling Groq AI (Llama 3.3) for summary...');
+    const client = getGroqClient();
     
-    // Truncate transcript if too long (Gemini has token limits)
-    const maxTranscriptLength = 15000;
-    const truncatedTranscript = transcript.length > maxTranscriptLength 
-      ? transcript.substring(0, maxTranscriptLength) + "..." 
-      : transcript;
+    const completion = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an educational content summarizer. Always respond with valid JSON only, no markdown or extra text.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 3000,
+    });
+
+    const textResponse = completion.choices[0]?.message?.content || '';
+    console.log('✅ Groq responded successfully for summary');
     
-    let formatInstructions = '';
-    if (format === 'brief') {
-      formatInstructions = 'Create a concise summary in 3-4 sentences.';
-    } else if (format === 'bullet') {
-      formatInstructions = 'Create a bullet-point summary with the main points.';
-    } else {
-      formatInstructions = 'Create a detailed summary in 5-7 paragraphs covering the main topics.';
-    }
+    // Extract JSON from response
+    let jsonStr = textResponse.trim();
     
-    const prompt = `
-You are an expert educational content summarizer. Based on the following video transcript, ${formatInstructions}
-The video is titled: "${title}"
-
-Additionally, extract 5-7 key learning points from the content.
-
-Format the output as valid JSON with this structure:
-{
-  "summary": "The complete summary here",
-  "keyPoints": [
-    "Key point 1",
-    "Key point 2",
-    etc.
-  ],
-  "difficulty": "beginner|intermediate|advanced", // Estimate the content difficulty
-  "topics": ["topic1", "topic2"] // Main topics covered
-}
-
-VIDEO TRANSCRIPT:
-${truncatedTranscript}
-`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const textResponse = response.text();
-    
-    // Extract the JSON part from the response
-    const jsonMatch = textResponse.match(/```json\n([\s\S]*?)\n```/) || 
-                      textResponse.match(/```\n([\s\S]*?)\n```/) ||
-                      textResponse.match(/({[\s\S]*})/);
+    // Remove markdown code blocks if present
+    const jsonMatch = jsonStr.match(/```json\n?([\s\S]*?)\n?```/) || 
+                      jsonStr.match(/```\n?([\s\S]*?)\n?```/) ||
+                      jsonStr.match(/({[\s\S]*})/);
                       
     if (jsonMatch && jsonMatch[1]) {
-      return JSON.parse(jsonMatch[1].trim());
-    } else {
-      // If no JSON formatting found, try to parse the whole response
-      return JSON.parse(textResponse);
+      jsonStr = jsonMatch[1].trim();
     }
+    
+    // Try to parse JSON, handle truncated responses
+    let result;
+    try {
+      result = JSON.parse(jsonStr);
+    } catch (parseError) {
+      // Try to fix common JSON issues
+      console.log('⚠️ JSON parse failed, attempting to fix...');
+      
+      // Extract summary - handle multi-line strings
+      let summaryText = '';
+      const summaryStartIndex = jsonStr.indexOf('"summary"');
+      if (summaryStartIndex !== -1) {
+        const colonIndex = jsonStr.indexOf(':', summaryStartIndex);
+        const quoteStart = jsonStr.indexOf('"', colonIndex + 1);
+        if (quoteStart !== -1) {
+          // Find the end of the summary string (handle escaped quotes)
+          let quoteEnd = quoteStart + 1;
+          while (quoteEnd < jsonStr.length) {
+            if (jsonStr[quoteEnd] === '"' && jsonStr[quoteEnd - 1] !== '\\') {
+              break;
+            }
+            quoteEnd++;
+          }
+          summaryText = jsonStr.substring(quoteStart + 1, quoteEnd)
+            .replace(/\\"/g, '"')
+            .replace(/\\n/g, '\n')
+            .replace(/\\t/g, '\t');
+        }
+      }
+      
+      // Extract key points
+      let keyPoints = [];
+      const keyPointsMatch = jsonStr.match(/"keyPoints"\s*:\s*\[([\s\S]*?)(?:\]|$)/);
+      if (keyPointsMatch) {
+        const pointsStr = keyPointsMatch[1];
+        const pointMatches = pointsStr.match(/"([^"]+)"/g);
+        if (pointMatches) {
+          keyPoints = pointMatches.map(p => p.replace(/"/g, ''));
+        }
+      }
+      
+      // Extract difficulty
+      const difficultyMatch = jsonStr.match(/"difficulty"\s*:\s*"(\w+)"/);
+      const difficulty = difficultyMatch ? difficultyMatch[1] : 'intermediate';
+      
+      // Extract topics
+      let topics = [];
+      const topicsMatch = jsonStr.match(/"topics"\s*:\s*\[([\s\S]*?)(?:\]|$)/);
+      if (topicsMatch) {
+        const topicMatches = topicsMatch[1].match(/"([^"]+)"/g);
+        if (topicMatches) {
+          topics = topicMatches.map(t => t.replace(/"/g, ''));
+        }
+      }
+      
+      if (summaryText) {
+        result = {
+          summary: summaryText,
+          mainConcepts: topics.length > 0 ? topics : ['Core concepts', 'Fundamentals', 'Best practices'],
+          keyPoints: keyPoints.length > 0 ? keyPoints : ['Key concepts from this video'],
+          keywords: topics.length > 0 ? topics : [title.split(' ')[0]],
+          practicalApplications: ['Apply in real projects', 'Practice exercises'],
+          nextSteps: ['Review the material', 'Try hands-on examples'],
+          difficulty: difficulty
+        };
+        console.log('✅ Recovered partial summary data');
+      } else {
+        // If all else fails, create a basic summary from the video title
+        result = {
+          summary: `This video covers ${title}. The content provides educational insights and key concepts related to the topic.`,
+          mainConcepts: ['Core concepts', 'Fundamentals', 'Best practices'],
+          keyPoints: ['Main topic covered in the video', 'Key concepts explained', 'Practical examples demonstrated'],
+          keywords: [title.split(' ')[0], 'learning', 'tutorial'],
+          practicalApplications: ['Apply in real projects', 'Practice exercises'],
+          nextSteps: ['Review the material', 'Try hands-on examples'],
+          difficulty: 'intermediate'
+        };
+        console.log('⚠️ Using fallback summary');
+      }
+    }
+    
+    // Ensure all required fields exist with defaults
+    const finalResult = {
+      summary: result.summary || `This video covers ${title}.`,
+      mainConcepts: result.mainConcepts || result.topics || ['Core concepts', 'Fundamentals', 'Best practices'],
+      keyPoints: result.keyPoints || ['Key learning points from this video'],
+      keywords: result.keywords || result.topics || [title.split(' ')[0]],
+      practicalApplications: result.practicalApplications || ['Apply in real projects', 'Practice exercises'],
+      nextSteps: result.nextSteps || ['Review the material', 'Try hands-on examples'],
+      difficulty: result.difficulty || 'intermediate'
+    };
+    
+    console.log(`✅ Generated summary with ${finalResult.keyPoints?.length || 0} key points`);
+    return finalResult;
+    
   } catch (error) {
-    console.error('Error generating summary:', error);
+    console.error('❌ Summary generation error:', error.message);
     throw new Error(`Failed to generate summary: ${error.message}`);
   }
 }

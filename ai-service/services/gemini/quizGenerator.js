@@ -1,66 +1,83 @@
-const { getGeminiModel } = require('../../config/gemini');
+const Groq = require('groq-sdk');
+require('dotenv').config();
+
+// Initialize Groq client
+const getGroqClient = () => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not configured');
+  }
+  return new Groq({ apiKey });
+};
 
 /**
- * Generate quiz questions based on video transcript
- * @param {string} transcript - The video transcript text
+ * Generate quiz questions using Groq AI (Llama 3.3)
+ * @param {string} videoId - The YouTube video ID
  * @param {string} title - The video title
  * @param {number} numQuestions - Number of questions to generate (default: 5)
  * @param {string} difficulty - Quiz difficulty level (easy, medium, hard)
  * @returns {Array} Array of quiz questions with options and correct answers
  */
-async function generateQuiz(transcript, title, numQuestions = 5, difficulty = 'medium') {
+async function generateQuiz(videoId, title, numQuestions = 5, difficulty = 'medium') {
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  console.log('🎬 Generating quiz for video:', videoUrl);
+  console.log('📝 Title:', title);
+  
+  const prompt = `You are a quiz generator. Based on the YouTube video title and topic, create ${numQuestions} multiple-choice quiz questions at ${difficulty} difficulty level.
+
+Video Title: "${title}"
+Video URL: ${videoUrl}
+
+Create educational questions that would test understanding of a video about this topic. Make the questions relevant to what someone would learn from watching a video with this title.
+Also that questions should be techincal as well more complex and related to video not just therotical questions 
+IMPORTANT: Return ONLY valid JSON with NO markdown formatting, NO code blocks, NO extra text. Just the raw JSON object.
+
+The JSON must have this exact structure:
+{"questions":[{"question":"Question text here?","options":["Option A","Option B","Option C","Option D"],"correctAnswer":0,"explanation":"Brief explanation of why the correct answer is right"}]}
+
+Where correctAnswer is the index (0-3) of the correct option in the options array.`;
+
   try {
-    const model = getGeminiModel();
+    console.log('🤖 Calling Groq AI (Llama 3.3)...');
+    const client = getGroqClient();
     
-    // Truncate transcript if too long (Gemini has token limits)
-    const maxTranscriptLength = 15000;
-    const truncatedTranscript = transcript.length > maxTranscriptLength 
-      ? transcript.substring(0, maxTranscriptLength) + "..." 
-      : transcript;
+    const completion = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a quiz generator that creates educational multiple-choice questions. Always respond with valid JSON only, no markdown or extra text.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+
+    const textResponse = completion.choices[0]?.message?.content || '';
+    console.log('✅ Groq responded successfully');
     
-    const prompt = `
-You are an educational quiz creator. Based on the following video transcript, create ${numQuestions} multiple-choice questions at a ${difficulty} difficulty level.
-The video is titled: "${title}"
-
-For each question:
-1. Make sure the question is directly based on the content in the transcript
-2. Provide 4 possible answers (A, B, C, D)
-3. Indicate the correct answer
-4. Add a brief explanation why it's correct
-
-Format the output as valid JSON with this structure:
-{
-  "questions": [
-    {
-      "question": "Question text here?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0, // Index of the correct option (0-3)
-      "explanation": "Brief explanation why this is correct"
-    }
-  ]
-}
-
-VIDEO TRANSCRIPT:
-${truncatedTranscript}
-`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const textResponse = response.text();
+    // Extract JSON from response
+    let jsonStr = textResponse.trim();
     
-    // Extract the JSON part from the response
-    const jsonMatch = textResponse.match(/```json\n([\s\S]*?)\n```/) || 
-                      textResponse.match(/```\n([\s\S]*?)\n```/) ||
-                      textResponse.match(/({[\s\S]*})/);
+    // Remove markdown code blocks if present
+    const jsonMatch = jsonStr.match(/```json\n?([\s\S]*?)\n?```/) || 
+                      jsonStr.match(/```\n?([\s\S]*?)\n?```/) ||
+                      jsonStr.match(/({[\s\S]*})/);
                       
     if (jsonMatch && jsonMatch[1]) {
-      return JSON.parse(jsonMatch[1].trim());
-    } else {
-      // If no JSON formatting found, try to parse the whole response
-      return JSON.parse(textResponse);
+      jsonStr = jsonMatch[1].trim();
     }
+    
+    const result = JSON.parse(jsonStr);
+    console.log(`✅ Generated ${result.questions?.length || 0} quiz questions`);
+    return result;
+    
   } catch (error) {
-    console.error('Error generating quiz:', error);
+    console.error('❌ Quiz generation error:', error.message);
     throw new Error(`Failed to generate quiz: ${error.message}`);
   }
 }
