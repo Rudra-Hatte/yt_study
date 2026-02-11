@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Study - Project Architecture Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .page {
+            background: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            page-break-after: always;
+        }
+        
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        
+        h1 {
+            color: #2563eb;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #1e40af;
+            font-size: 1.8em;
+            margin: 30px 0 15px 0;
+            border-left: 4px solid #2563eb;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #3730a3;
+            font-size: 1.4em;
+            margin: 20px 0 10px 0;
+        }
+        
+        h4 {
+            color: #4f46e5;
+            font-size: 1.1em;
+            margin: 15px 0 8px 0;
+        }
+        
+        p {
+            margin-bottom: 12px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        
+        .diagram-box {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 20px 0;
+            line-height: 1.4;
+        }
+        
+        .code-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        tr:hover {
+            background: #e0f2fe;
+        }
+        
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .tech-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .tech-card h4 {
+            color: white;
+            margin-bottom: 10px;
+        }
+        
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f0f9ff;
+            border-radius: 8px;
+            border-left: 4px solid #0ea5e9;
+        }
+        
+        .step-number {
+            background: #2563eb;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .file-tree {
+            background: #1e293b;
+            color: #a5f3fc;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .file-tree .folder {
+            color: #fbbf24;
+        }
+        
+        .file-tree .file {
+            color: #a5f3fc;
+        }
+        
+        .highlight {
+            background: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 2px;
+        }
+        
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-purple { background: #f3e8ff; color: #6b21a8; }
+        .badge-orange { background: #ffedd5; color: #c2410c; }
+        
+        .port-info {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 24px;
+            color: #2563eb;
+            margin: 10px 0;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- PAGE 1: Title & Overview -->
+<div class="page">
+    <h1>🎓 YT Study - Project Architecture</h1>
+    <p class="subtitle">Complete Technical Documentation & Flow Diagrams</p>
+    
+    <h2>📋 Project Overview</h2>
+    <p>YT Study is a full-stack web application that transforms YouTube videos into structured, interactive learning experiences with AI-powered features including quizzes, flashcards, summaries, and an AI chat assistant.</p>
+    
+    <h2>🛠️ Technology Stack</h2>
+    <div class="tech-stack">
+        <div class="tech-card">
+            <h4>🎨 Frontend</h4>
+            <p>React + Vite</p>
+            <p>Tailwind CSS</p>
+            <p>Framer Motion</p>
+        </div>
+        <div class="tech-card">
+            <h4>📦 Backend</h4>
+            <p>Node.js + Express</p>
+            <p>MongoDB Atlas</p>
+            <p>JWT Auth</p>
+        </div>
+        <div class="tech-card">
+            <h4>🤖 AI Service</h4>
+            <p>Groq API</p>
+            <p>Llama 3.3-70b</p>
+            <p>Node.js</p>
+        </div>
+    </div>
+    
+    <h2>🌐 Service Ports</h2>
+    <p>
+        <span class="port-info">Frontend: 5173</span>
+        <span class="port-info">Backend: 5000</span>
+        <span class="port-info">AI Service: 5001</span>
+    </p>
+    
+    <h2>✨ Key Features</h2>
+    <table>
+        <tr>
+            <th>Feature</th>
+            <th>Description</th>
+            <th>AI Powered</th>
+        </tr>
+        <tr>
+            <td>📚 Course Creation</td>
+            <td>Manual or AI-generated courses from YouTube videos</td>
+            <td>✅ Yes</td>
+        </tr>
+        <tr>
+            <td>📝 Quiz Generation</td>
+            <td>Auto-generate quizzes based on video content</td>
+            <td>✅ Yes</td>
+        </tr>
+        <tr>
+            <td>🃏 Flashcards</td>
+            <td>Create study flashcards from video topics</td>
+            <td>✅ Yes</td>
+        </tr>
+        <tr>
+            <td>📑 Summaries</td>
+            <td>Generate comprehensive video summaries</td>
+            <td>✅ Yes</td>
+        </tr>
+        <tr>
+            <td>💬 AI Chat</td>
+            <td>Chat with AI about course content</td>
+            <td>✅ Yes</td>
+        </tr>
+        <tr>
+            <td>📊 Progress Tracking</td>
+            <td>Track learning progress and completion</td>
+            <td>❌ No</td>
+        </tr>
+    </table>
+</div>
+
+<!-- PAGE 2: System Architecture Diagram -->
+<div class="page">
+    <h1>📊 System Architecture Diagram</h1>
+    
+    <div class="diagram-box">
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                                    YT STUDY SYSTEM                                   │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              🌐 FRONTEND (React + Vite)                              │
+│                                  Port: 5173                                          │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
+│  │  PAGES: Home.jsx | Dashboard.jsx | Courses.jsx | CreateCourse.jsx | CourseView│   │
+│  └──────────────────────────────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
+│  │  COMPONENTS: QuizModal | FlashcardModal | SummaryModal | AIChatBot | Navbar   │   │
+│  └──────────────────────────────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
+│  │  CONTEXTS: AuthContext_simple.jsx (Auth) | CourseContext.jsx (Courses)        │   │
+│  └──────────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                    ┌───────────────────┴───────────────────┐
+                    │ HTTP Requests                         │ HTTP Requests
+                    ▼                                       ▼
+┌─────────────────────────────────────┐   ┌─────────────────────────────────────────┐
+│     📦 BACKEND (Node.js/Express)    │   │       🤖 AI SERVICE (Node.js/Express)   │
+│            Port: 5000               │   │              Port: 5001                  │
+│  ┌───────────────────────────────┐  │   │  ┌─────────────────────────────────┐    │
+│  │         ROUTES                │  │   │  │         ROUTES                  │    │
+│  │  /api/auth    (Login/Register)│  │   │  │  /api/ai/quiz      (Quiz Gen)   │    │
+│  │  /api/courses (CRUD)          │  │   │  │  /api/ai/flashcards (Cards Gen) │    │
+│  │  /api/videos  (Video Ops)     │  │   │  │  /api/ai/summary   (Summary Gen)│    │
+│  │  /api/progress (Tracking)     │  │   │  │  /api/ai/chat      (AI Chat)    │    │
+│  └───────────────────────────────┘  │   │  └─────────────────────────────────┘    │
+│  ┌───────────────────────────────┐  │   │  ┌─────────────────────────────────┐    │
+│  │        MODELS (MongoDB)       │  │   │  │    SERVICES (AI Generators)     │    │
+│  │  User | Course | Video | Quiz │  │   │  │  quizGenerator.js ──────────────┼────┼──► Groq API
+│  │  Flashcard | Progress         │  │   │  │  flashcardGenerator.js ─────────┼────┼──► Llama 3.3
+│  └───────────────────────────────┘  │   │  │  summaryGenerator.js ───────────┼────┼──► 70b-versatile
+│                 │                   │   │  └─────────────────────────────────┘    │
+│                 ▼                   │   └─────────────────────────────────────────┘
+│  ┌───────────────────────────────┐  │
+│  │        MongoDB Atlas          │  │
+│  │      (Cloud Database)         │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
+    </div>
+</div>
+
+<!-- PAGE 3: Quiz Generation Flow -->
+<div class="page">
+    <h1>📝 Quiz Generation Flow</h1>
+    <p>Detailed flow of how quizzes are generated from YouTube videos using AI.</p>
+    
+    <div class="flow-step">
+        <span class="step-number">1</span>
+        <div>
+            <h4>User Clicks "Generate Quiz" Button</h4>
+            <p><strong>File:</strong> <code>frontend/src/pages/CourseView.jsx</code></p>
+            <p>User is viewing a course and clicks the quiz generation button on the current video.</p>
+        </div>
+    </div>
+    
+    <div class="arrow">⬇️</div>
+    
+    <div class="flow-step">
+        <span class="step-number">2</span>
+        <div>
+            <h4>Frontend Sends API Request</h4>
+            <p><strong>File:</strong> <code>frontend/src/pages/CourseView.jsx</code> - <code>handleGenerateQuiz()</code></p>
+            <div class="code-box">
+fetch(`${AI_SERVICE_URL}/api/ai/quiz`, {
+  method: 'POST',
+  body: JSON.stringify({
+    videoId: "abc123",
+    title: "JavaScript Tutorial",
+    numQuestions: 10,
+    difficulty: "medium"
+  })
+})
+            </div>
+        </div>
+    </div>
+    
+    <div class="arrow">⬇️</div>
+    
+    <div class="flow-step">
+        <span class="step-number">3</span>
+        <div>
+            <h4>AI Service Route Handler</h4>
+            <p><strong>File:</strong> <code>ai-service/routes/index.js</code></p>
+            <div class="code-box">router.post('/quiz', quizController.createQuiz);</div>
+        </div>
+    </div>
+    
+    <div class="arrow">⬇️</div>
+    
+    <div class="flow-step">
+        <span class="step-number">4</span>
+        <div>
+            <h4>Controller Processes Request</h4>
+            <p><strong>File:</strong> <code>ai-service/controllers/quizController.js</code></p>
+            <div class="code-box">
+const { videoId, title, numQuestions, difficulty } = req.body;
+const quiz = await generateQuiz(videoId, title, numQuestions, difficulty);
+res.json({ success: true, data: quiz });
+            </div>
+        </div>
+    </div>
+    
+    <div class="arrow">⬇️</div>
+    
+    <div class="flow-step">
+        <span class="step-number">5</span>
+        <div>
+            <h4>AI Generator Calls Groq API</h4>
+            <p><strong>File:</strong> <code>ai-service/services/gemini/quizGenerator.js</code></p>
+            <div class="code-box">
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const completion = await client.chat.completions.create({
+  model: 'llama-3.3-70b-versatile',
+  messages: [{ role: 'user', content: prompt }]
+});
+// Returns JSON with questions array
+            </div>
+        </div>
+    </div>
+    
+    <div class="arrow">⬇️</div>
+    
+    <div class="flow-step">
+        <span class="step-number">6</span>
+        <div>
+            <h4>Quiz Modal Displays Questions</h4>
+            <p><strong>File:</strong> <code>frontend/src/components/QuizModal.jsx</code></p>
+            <p>Modal shows questions one by one, tracks answers, calculates score.</p>
+        </div>
+    </div>
+    
+    <h3>📁 Files Involved in Quiz Flow</h3>
+    <table>
+        <tr>
+            <th>Step</th>
+            <th>File</th>
+            <th>Function/Purpose</th>
+        </tr>
+        <tr>
+            <td>1-2</td>
+            <td>CourseView.jsx</td>
+            <td>handleGenerateQuiz() - Triggers API call</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>routes/index.js</td>
+            <td>POST /api/ai/quiz route</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>quizController.js</td>
+            <td>createQuiz() - Orchestrates generation</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>quizGenerator.js</td>
+            <td>generateQuiz() - Calls Groq AI</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td>QuizModal.jsx</td>
+            <td>Renders quiz UI</td>
+        </tr>
+    </table>
+</div>
+
+<!-- PAGE 4: Flashcard & Summary Flows -->
+<div class="page">
+    <h1>🃏 Flashcard Generation Flow</h1>
+    
+    <div class="diagram-box">
+┌────────────────┐    ┌────────────────┐    ┌────────────────┐    ┌────────────────┐
+│ CourseView.jsx │───►│flashcardContro │───►│flashcardGenera │───►│  Groq API      │
+│ handleGenerate │    │   ller.js      │    │    tor.js      │    │ (Llama 3.3)    │
+│  Flashcards()  │    │                │    │                │    │                │
+└────────────────┘    └────────────────┘    └────────────────┘    └────────────────┘
+        │                                                                  │
+        └──────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼
+                            ┌────────────────────┐
+                            │  FlashcardModal.jsx│
+                            │  - Flip animation  │
+                            │  - Front/Back view │
+                            │  - Navigation      │
+                            └────────────────────┘
+    </div>
+    
+    <table>
+        <tr>
+            <th>Component</th>
+            <th>File Location</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td>Trigger</td>
+            <td>frontend/src/pages/CourseView.jsx</td>
+            <td>handleGenerateFlashcards() function</td>
+        </tr>
+        <tr>
+            <td>Controller</td>
+            <td>ai-service/controllers/flashcardController.js</td>
+            <td>createFlashcards() - Process request</td>
+        </tr>
+        <tr>
+            <td>Generator</td>
+            <td>ai-service/services/gemini/flashcardGenerator.js</td>
+            <td>generateFlashcards() - Call Groq AI</td>
+        </tr>
+        <tr>
+            <td>Display</td>
+            <td>frontend/src/components/FlashcardModal.jsx</td>
+            <td>Render flashcards with flip animation</td>
+        </tr>
+    </table>
+    
+    <h1 style="margin-top: 40px;">📑 Summary Generation Flow</h1>
+    
+    <div class="diagram-box">
+┌────────────────┐    ┌────────────────┐    ┌────────────────┐    ┌────────────────┐
+│ CourseView.jsx │───►│summaryControll │───►│summaryGenerato │───►│  Groq API      │
+│ handleGenerate │    │    er.js       │    │    r.js        │    │ (Llama 3.3)    │
+│   Summary()    │    │                │    │                │    │                │
+└────────────────┘    └────────────────┘    └────────────────┘    └────────────────┘
+                                       │
+                                       ▼
+                            ┌─────────────────────────┐
+                            │    SummaryModal.jsx     │
+                            │  ┌───────────────────┐  │
+                            │  │ 📖 Overview       │  │
+                            │  │ 🎯 Main Concepts  │  │
+                            │  │ 💡 Key Points     │  │
+                            │  │ 🏷️ Keywords       │  │
+                            │  │ 🛠️ Applications   │  │
+                            │  │ 🚀 Next Steps     │  │
+                            │  └───────────────────┘  │
+                            └─────────────────────────┘
+    </div>
+    
+    <h3>Summary Response Structure</h3>
+    <div class="code-box">
+{
+  "summary": "Overview text...",
+  "mainConcepts": ["Concept 1", "Concept 2", "Concept 3"],
+  "keyPoints": ["Point 1", "Point 2", "Point 3"],
+  "keywords": ["keyword1", "keyword2", "keyword3"],
+  "practicalApplications": ["App 1", "App 2"],
+  "nextSteps": ["Step 1", "Step 2"],
+  "difficulty": "intermediate"
+}
+    </div>
+</div>
+
+<!-- PAGE 5: Complete File Structure -->
+<div class="page">
+    <h1>📁 Complete File Structure</h1>
+    
+    <div class="file-tree">
+yt_study/
+├── 🎨 <span class="folder">frontend/</span>                    # React + Vite + Tailwind
+│   └── src/
+│       ├── App.jsx                        # Main app with routing
+│       ├── main.jsx                       # Entry point
+│       │
+│       ├── <span class="folder">pages/</span>
+│       │   ├── <span class="file">Home.jsx</span>              # Landing page
+│       │   ├── <span class="file">Login.jsx</span>             # User login
+│       │   ├── <span class="file">Register.jsx</span>          # User registration
+│       │   ├── <span class="file">Dashboard.jsx</span>         # User dashboard
+│       │   ├── <span class="file">Courses.jsx</span>           # List all courses
+│       │   ├── <span class="file">CreateCourse.jsx</span>      # Create new course
+│       │   └── <span class="file">CourseView.jsx</span>        # View course + AI features ⭐
+│       │
+│       ├── <span class="folder">components/</span>
+│       │   ├── <span class="file">QuizModal.jsx</span>         # Quiz display modal
+│       │   ├── <span class="file">FlashcardModal.jsx</span>    # Flashcard display
+│       │   ├── <span class="file">SummaryModal.jsx</span>      # Summary display
+│       │   ├── <span class="file">AIChatBot.jsx</span>         # AI chat widget
+│       │   ├── <span class="file">Navbar.jsx</span>            # Navigation bar
+│       │   └── <span class="file">AutomatedCourseGenerator.jsx</span>
+│       │
+│       ├── <span class="folder">contexts/</span>
+│       │   ├── <span class="file">AuthContext_simple.jsx</span> # Auth state management
+│       │   └── <span class="file">CourseContext.jsx</span>      # Course state
+│       │
+│       └── <span class="folder">config/</span>
+│           └── <span class="file">api.js</span>                 # API URL configuration
+│
+├── 📦 <span class="folder">backend/</span>                     # Node.js + Express + MongoDB
+│   ├── server.js                          # Express server entry
+│   │
+│   ├── <span class="folder">routes/</span>
+│   │   ├── <span class="file">auth.js</span>                   # /api/auth/* routes
+│   │   ├── <span class="file">courses.js</span>                # /api/courses/* routes
+│   │   ├── <span class="file">videos.js</span>                 # /api/videos/* routes
+│   │   ├── <span class="file">progress.js</span>               # /api/progress/* routes
+│   │   └── <span class="file">leaderboard.js</span>            # /api/leaderboard/* routes
+│   │
+│   ├── <span class="folder">controllers/</span>
+│   │   ├── <span class="file">authController.js</span>         # Login/Register logic
+│   │   ├── <span class="file">courseController.js</span>       # Course CRUD
+│   │   └── <span class="file">progressController.js</span>     # Progress tracking
+│   │
+│   └── <span class="folder">models/</span>                      # MongoDB Schemas
+│       ├── <span class="file">User.js</span>
+│       ├── <span class="file">Course.js</span>
+│       ├── <span class="file">Video.js</span>
+│       ├── <span class="file">Quiz.js</span>
+│       ├── <span class="file">Flashcard.js</span>
+│       └── <span class="file">Progress.js</span>
+│
+└── 🤖 <span class="folder">ai-service/</span>                  # AI Service (Groq API)
+    ├── index.js                           # Express server (Port 5001)
+    │
+    ├── <span class="folder">routes/</span>
+    │   └── <span class="file">index.js</span>                  # All AI routes ⭐
+    │
+    ├── <span class="folder">controllers/</span>
+    │   ├── <span class="file">quizController.js</span>         # Quiz requests
+    │   ├── <span class="file">flashcardController.js</span>    # Flashcard requests
+    │   ├── <span class="file">summaryController.js</span>      # Summary requests
+    │   ├── <span class="file">chatController.js</span>         # Chat requests
+    │   └── <span class="file">curatorController.js</span>      # Video curation
+    │
+    └── <span class="folder">services/gemini/</span>            # AI Generation Logic ⭐
+        ├── <span class="file">quizGenerator.js</span>          # Generate quiz with Groq
+        ├── <span class="file">flashcardGenerator.js</span>     # Generate flashcards
+        ├── <span class="file">summaryGenerator.js</span>       # Generate summary
+        ├── <span class="file">videoCurator.js</span>           # Curate videos
+        └── <span class="file">courseStructurer.js</span>       # Structure courses
+    </div>
+</div>
+
+<!-- PAGE 6: API Endpoints & Examples -->
+<div class="page">
+    <h1>🔌 API Endpoints Reference</h1>
+    
+    <h2>🤖 AI Service Endpoints (Port 5001)</h2>
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Purpose</th>
+            <th>Request Body</th>
+        </tr>
+        <tr>
+            <td><span class="badge badge-green">POST</span></td>
+            <td>/api/ai/quiz</td>
+            <td>Generate Quiz</td>
+            <td>videoId, title, numQuestions, difficulty</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-green">POST</span></td>
+            <td>/api/ai/flashcards</td>
+            <td>Generate Flashcards</td>
+            <td>videoId, title, numCards</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-green">POST</span></td>
+            <td>/api/ai/summary</td>
+            <td>Generate Summary</td>
+            <td>videoId, title, format</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-green">POST</span></td>
+            <td>/api/ai/chat</td>
+            <td>AI Chat</td>
+            <td>message, context</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-blue">GET</span></td>
+            <td>/api/ai/status</td>
+            <td>Health Check</td>
+            <td>-</td>
+        </tr>
+    </table>
+    
+    <h2>📦 Backend Endpoints (Port 5000)</h2>
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td><span class="badge badge-green">POST</span></td>
+            <td>/api/auth/login</td>
+            <td>User Login</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-green">POST</span></td>
+            <td>/api/auth/register</td>
+            <td>User Registration</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-blue">GET</span></td>
+            <td>/api/courses</td>
+            <td>Get All Courses</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-green">POST</span></td>
+            <td>/api/courses</td>
+            <td>Create Course</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-blue">GET</span></td>
+            <td>/api/progress/:userId</td>
+            <td>Get User Progress</td>
+        </tr>
+    </table>
+    
+    <h2>📝 Request/Response Examples</h2>
+    
+    <h3>Quiz Generation Request</h3>
+    <div class="code-box">
+POST http://localhost:5001/api/ai/quiz
+Content-Type: application/json
+
+{
+  "videoId": "dQw4w9WgXcQ",
+  "title": "JavaScript Tutorial for Beginners",
+  "numQuestions": 10,
+  "difficulty": "medium"
+}
+    </div>
+    
+    <h3>Quiz Generation Response</h3>
+    <div class="code-box">
+{
+  "success": true,
+  "data": {
+    "questions": [
+      {
+        "question": "What is JavaScript primarily used for?",
+        "options": [
+          "Web development",
+          "Database management",
+          "Operating system development",
+          "Hardware control"
+        ],
+        "correctAnswer": 0,
+        "explanation": "JavaScript is primarily used for web development..."
+      }
+    ]
+  }
+}
+    </div>
+</div>
+
+<!-- PAGE 7: Environment Variables & Deployment -->
+<div class="page">
+    <h1>⚙️ Environment Configuration</h1>
+    
+    <h2>Frontend (.env)</h2>
+    <div class="code-box">
+VITE_API_URL=http://localhost:5000
+VITE_AI_SERVICE_URL=http://localhost:5001
+    </div>
+    
+    <h2>Backend (.env)</h2>
+    <div class="code-box">
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/ytStudy
+JWT_SECRET=your-super-secret-jwt-key
+FRONTEND_URL=http://localhost:5173
+PORT=5000
+    </div>
+    
+    <h2>AI Service (.env)</h2>
+    <div class="code-box">
+GROQ_API_KEY=gsk_your_groq_api_key_here
+PORT=5001
+    </div>
+    
+    <h1 style="margin-top: 40px;">🚀 How to Run the Project</h1>
+    
+    <h3>Terminal 1: Start Frontend</h3>
+    <div class="code-box">
+cd frontend
+npm install
+npm run dev
+# Runs on http://localhost:5173
+    </div>
+    
+    <h3>Terminal 2: Start Backend</h3>
+    <div class="code-box">
+cd backend
+npm install
+npm start
+# Runs on http://localhost:5000
+    </div>
+    
+    <h3>Terminal 3: Start AI Service</h3>
+    <div class="code-box">
+cd ai-service
+npm install
+node index.js
+# Runs on http://localhost:5001
+    </div>
+    
+    <h2>🌐 Deployment Architecture</h2>
+    <table>
+        <tr>
+            <th>Service</th>
+            <th>Platform</th>
+            <th>URL Pattern</th>
+        </tr>
+        <tr>
+            <td>Frontend</td>
+            <td>Vercel</td>
+            <td>https://your-app.vercel.app</td>
+        </tr>
+        <tr>
+            <td>Backend</td>
+            <td>Render</td>
+            <td>https://your-backend.onrender.com</td>
+        </tr>
+        <tr>
+            <td>AI Service</td>
+            <td>Render</td>
+            <td>https://your-ai-service.onrender.com</td>
+        </tr>
+        <tr>
+            <td>Database</td>
+            <td>MongoDB Atlas</td>
+            <td>Cloud-hosted MongoDB</td>
+        </tr>
+    </table>
+</div>
+
+<!-- PAGE 8: Data Flow Summary -->
+<div class="page">
+    <h1>🔄 Complete Data Flow Summary</h1>
+    
+    <div class="diagram-box">
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              USER INTERACTION FLOW                                   │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+    👤 USER
+      │
+      ▼
+┌─────────────────┐
+│   FRONTEND      │
+│   (React)       │
+│   Port: 5173    │
+└────────┬────────┘
+         │
+         │  For Auth, Courses, Progress
+         ├──────────────────────────────────────────┐
+         │                                          │
+         │  For AI Features (Quiz/Flashcard/Summary)│
+         │                                          │
+         ▼                                          ▼
+┌─────────────────┐                      ┌─────────────────┐
+│   BACKEND       │                      │   AI SERVICE    │
+│   (Express)     │                      │   (Express)     │
+│   Port: 5000    │                      │   Port: 5001    │
+└────────┬────────┘                      └────────┬────────┘
+         │                                        │
+         │                                        │  API Call
+         ▼                                        ▼
+┌─────────────────┐                      ┌─────────────────┐
+│   MongoDB       │                      │   Groq API      │
+│   Atlas         │                      │   (Llama 3.3)   │
+│   (Database)    │                      │   (AI Model)    │
+└─────────────────┘                      └─────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              FEATURE → FILE MAPPING                                  │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────┬────────────────────────────────────────────────────────────────────┐
+│   FEATURE    │   FILES INVOLVED (in order of execution)                          │
+├──────────────┼────────────────────────────────────────────────────────────────────┤
+│   🔐 Login   │   Login.jsx → AuthContext → /api/auth/login → authController.js   │
+│              │   → User.js (MongoDB)                                              │
+├──────────────┼────────────────────────────────────────────────────────────────────┤
+│   📚 Create  │   CreateCourse.jsx → CourseContext → /api/courses →               │
+│   Course     │   courseController.js → Course.js (MongoDB)                        │
+├──────────────┼────────────────────────────────────────────────────────────────────┤
+│   📝 Quiz    │   CourseView.jsx → /api/ai/quiz → quizController.js →             │
+│   Generate   │   quizGenerator.js → Groq API → QuizModal.jsx                     │
+├──────────────┼────────────────────────────────────────────────────────────────────┤
+│   🃏 Flash-  │   CourseView.jsx → /api/ai/flashcards → flashcardController.js →  │
+│   cards      │   flashcardGenerator.js → Groq API → FlashcardModal.jsx           │
+├──────────────┼────────────────────────────────────────────────────────────────────┤
+│   📑 Summary │   CourseView.jsx → /api/ai/summary → summaryController.js →       │
+│              │   summaryGenerator.js → Groq API → SummaryModal.jsx               │
+├──────────────┼────────────────────────────────────────────────────────────────────┤
+│   💬 AI Chat │   AIChatBot.jsx → /api/ai/chat → chatController.js → Groq API     │
+└──────────────┴────────────────────────────────────────────────────────────────────┘
+    </div>
+    
+    <h2>🎯 Key Takeaways</h2>
+    <ul style="padding-left: 20px; line-height: 2;">
+        <li><strong>3 Services:</strong> Frontend (5173), Backend (5000), AI Service (5001)</li>
+        <li><strong>AI Provider:</strong> Groq API with Llama 3.3-70b-versatile model</li>
+        <li><strong>Database:</strong> MongoDB Atlas (cloud-hosted)</li>
+        <li><strong>State Management:</strong> React Context API (AuthContext, CourseContext)</li>
+        <li><strong>All AI features</strong> (Quiz, Flashcards, Summary, Chat) go through the AI Service</li>
+        <li><strong>Authentication & data storage</strong> go through the Backend</li>
+    </ul>
+    
+    <div style="margin-top: 40px; padding: 20px; background: #f0f9ff; border-radius: 10px; border: 2px solid #2563eb;">
+        <h3 style="color: #1e40af;">📌 Document Information</h3>
+        <p><strong>Project:</strong> YT Study - YouTube Course Web App</p>
+        <p><strong>Version:</strong> 1.0.0</p>
+        <p><strong>Generated:</strong> February 2026</p>
+        <p><strong>Author:</strong> Project Documentation</p>
+    </div>
+</div>
+
+</body>
+</html>
