@@ -1,14 +1,25 @@
-const { getGeminiModel } = require('../../config/gemini');
+const Groq = require('groq-sdk');
+require('dotenv').config();
+
+// Initialize Groq client
+const getGroqClient = () => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not configured');
+  }
+  return new Groq({ apiKey });
+};
 
 /**
- * Generate structured course outline with logical progression
+ * Generate structured course outline with logical progression using Groq AI
  * @param {Array} videoSummaries - Array of video summaries with metadata
  * @param {string} courseTopic - The main course topic
  * @returns {Object} Structured course outline with modules
  */
 async function generateCourseStructure(videoSummaries, courseTopic) {
   try {
-    const model = getGeminiModel();
+    console.log('🤖 Generating course structure with Groq AI (Llama 3.3)...');
+    const client = getGroqClient();
     
     // Format video summaries for analysis
     const videoAnalysisText = videoSummaries.map((video, index) => 
@@ -21,8 +32,7 @@ async function generateCourseStructure(videoSummaries, courseTopic) {
       ---`
     ).join('\n\n');
 
-    const prompt = `
-You are an expert educational course designer. Based on the following video summaries for the topic "${courseTopic}", create a structured learning path with logical progression from fundamental concepts to advanced topics.
+    const prompt = `You are an expert educational course designer. Based on the following video summaries for the topic "${courseTopic}", create a structured learning path with logical progression from fundamental concepts to advanced topics.
 
 VIDEOS TO ANALYZE:
 ${videoAnalysisText}
@@ -33,13 +43,15 @@ Create a structured course outline that:
 3. Ensures prerequisite knowledge is covered before dependent concepts
 4. Creates smooth learning progression
 
-Format the output as valid JSON with this structure:
+IMPORTANT: Return ONLY valid JSON with NO markdown formatting, NO code blocks, NO extra text. Just the raw JSON object.
+
+The JSON must have this exact structure:
 {
   "courseStructure": {
     "title": "Generated course title",
     "description": "Course overview and learning objectives",
     "estimatedDuration": "Total estimated learning time",
-    "difficulty": "overall|beginner|intermediate|advanced",
+    "difficulty": "beginner|intermediate|advanced",
     "modules": [
       {
         "moduleNumber": 1,
@@ -72,46 +84,65 @@ Format the output as valid JSON with this structure:
   },
   "prerequisites": ["Overall course prerequisites"],
   "learningOutcomes": ["What students will achieve after completing the course"]
-}
-`;
+}`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const textResponse = response.text();
+    const completion = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert educational course designer. Always respond with valid JSON only, no markdown or extra text.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000,
+    });
+
+    const textResponse = completion.choices[0]?.message?.content || '';
+    console.log('✅ Groq responded successfully for course structure');
     
     // Extract JSON from response
-    const jsonMatch = textResponse.match(/```json\n([\s\S]*?)\n```/) || 
-                      textResponse.match(/```\n([\s\S]*?)\n```/) ||
-                      textResponse.match(/({[\s\S]*})/);
+    let jsonStr = textResponse.trim();
+    
+    // Remove markdown code blocks if present
+    const jsonMatch = jsonStr.match(/```json\n?([\s\S]*?)\n?```/) || 
+                      jsonStr.match(/```\n?([\s\S]*?)\n?```/) ||
+                      jsonStr.match(/({[\s\S]*})/);
                       
     if (jsonMatch && jsonMatch[1]) {
-      return JSON.parse(jsonMatch[1].trim());
-    } else {
-      return JSON.parse(textResponse);
+      jsonStr = jsonMatch[1].trim();
     }
+    
+    const result = JSON.parse(jsonStr);
+    console.log('✅ Course structure generated successfully');
+    return result;
   } catch (error) {
-    console.error('Error generating course structure:', error);
+    console.error('❌ Error generating course structure:', error.message);
     throw new Error(`Failed to generate course structure: ${error.message}`);
   }
 }
 
 /**
- * Generate semantic representations and concept relationships
+ * Generate semantic representations and concept relationships using Groq AI
  * @param {Array} transcripts - Array of video transcripts
  * @param {string} courseTopic - Main course topic
  * @returns {Object} Semantic analysis and concept relationships
  */
 async function analyzeConceptRelationships(transcripts, courseTopic) {
   try {
-    const model = getGeminiModel();
+    console.log('🤖 Analyzing concept relationships with Groq AI (Llama 3.3)...');
+    const client = getGroqClient();
     
     // Limit analysis to avoid token limits
     const limitedTranscripts = transcripts.slice(0, 10).map((transcript, index) => 
       `Transcript ${index + 1}:\n${transcript.substring(0, 2000)}...\n---`
     ).join('\n\n');
 
-    const prompt = `
-You are an expert in educational content analysis. Analyze the following video transcripts for the topic "${courseTopic}" to identify:
+    const prompt = `You are an expert in educational content analysis. Analyze the following video transcripts for the topic "${courseTopic}" to identify:
 1. Key concepts and their relationships
 2. Prerequisite dependencies between concepts
 3. Concept difficulty levels
@@ -120,7 +151,9 @@ You are an expert in educational content analysis. Analyze the following video t
 TRANSCRIPTS:
 ${limitedTranscripts}
 
-Provide a semantic analysis with this JSON structure:
+IMPORTANT: Return ONLY valid JSON with NO markdown formatting, NO code blocks, NO extra text. Just the raw JSON object.
+
+The JSON must have this exact structure:
 {
   "concepts": [
     {
@@ -144,25 +177,44 @@ Provide a semantic analysis with this JSON structure:
       "recommendedOrder": [0, 1, 2]
     }
   ]
-}
-`;
+}`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const textResponse = response.text();
+    const completion = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert in educational content analysis. Always respond with valid JSON only, no markdown or extra text.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000,
+    });
+
+    const textResponse = completion.choices[0]?.message?.content || '';
+    console.log('✅ Groq responded successfully for concept analysis');
     
     // Extract JSON from response
-    const jsonMatch = textResponse.match(/```json\n([\s\S]*?)\n```/) || 
-                      textResponse.match(/```\n([\s\S]*?)\n```/) ||
-                      textResponse.match(/({[\s\S]*})/);
+    let jsonStr = textResponse.trim();
+    
+    // Remove markdown code blocks if present
+    const jsonMatch = jsonStr.match(/```json\n?([\s\S]*?)\n?```/) || 
+                      jsonStr.match(/```\n?([\s\S]*?)\n?```/) ||
+                      jsonStr.match(/({[\s\S]*})/);
                       
     if (jsonMatch && jsonMatch[1]) {
-      return JSON.parse(jsonMatch[1].trim());
-    } else {
-      return JSON.parse(textResponse);
+      jsonStr = jsonMatch[1].trim();
     }
+    
+    const result = JSON.parse(jsonStr);
+    console.log('✅ Concept relationships analyzed successfully');
+    return result;
   } catch (error) {
-    console.error('Error analyzing concept relationships:', error);
+    console.error('❌ Error analyzing concept relationships:', error.message);
     throw new Error(`Failed to analyze concept relationships: ${error.message}`);
   }
 }
