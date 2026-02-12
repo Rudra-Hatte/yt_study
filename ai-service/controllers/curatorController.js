@@ -1,6 +1,5 @@
 const { curateVideos } = require('../services/gemini/videoCurator');
 const { searchYouTubeVideos } = require('../utils/youtube');
-const { getGeminiModel } = require('../config/gemini');
 
 // Search and curate YouTube videos for a topic
 exports.searchAndCurateVideos = async (req, res, next) => {

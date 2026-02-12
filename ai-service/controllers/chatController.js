@@ -1,13 +1,16 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const apiKeyRotator = require('../config/apiKeyRotator');
+const Groq = require('groq-sdk');
+require('dotenv').config();
 
-// Function to get Gemini AI with rotated key
-const getGenAI = () => {
-  const apiKey = apiKeyRotator.getGeminiKey();
-  return new GoogleGenerativeAI(apiKey);
+// Initialize Groq client
+const getGroqClient = () => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not configured');
+  }
+  return new Groq({ apiKey });
 };
 
-// Chat with AI Study Buddy
+// Chat with AI Study Buddy using Groq
 exports.chatWithAI = async (req, res, next) => {
   try {
     const { message, context, courseId } = req.body;
@@ -18,11 +21,9 @@ exports.chatWithAI = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Message is required' });
     }
 
-    // Get Gemini instance with rotated key
-    const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const client = getGroqClient();
 
-    // Create context-aware prompt
+    // Create context-aware system prompt
     let systemPrompt = `You are an AI Study Buddy - a helpful, encouraging, and knowledgeable learning assistant. Your role is to help students learn effectively by:
 
 1. Providing clear explanations and examples
@@ -40,21 +41,32 @@ Guidelines:
 - Keep responses concise but helpful (max 200 words)
 - If you don't know something specific, be honest but still helpful
 
-Context: ${context || 'General study help'}
-`;
+Context: ${context || 'General study help'}`;
 
     if (courseId) {
       systemPrompt += `\nCourse Context: Student is currently working on course ID ${courseId}`;
     }
 
-    const prompt = `${systemPrompt}\n\nStudent question: ${message}\n\nProvide a helpful response:`;
-
-    console.log('Calling Gemini API...');
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const aiResponse = response.text();
+    console.log('🤖 Calling Groq AI (Llama 3.3) for chat...');
     
-    console.log('Gemini response received successfully');
+    const completion = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: message
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
+
+    const aiResponse = completion.choices[0]?.message?.content || '';
+    console.log('✅ Groq chat response received successfully');
 
     res.json({ 
       success: true, 
@@ -65,7 +77,7 @@ Context: ${context || 'General study help'}
     });
 
   } catch (error) {
-    console.error('AI Chat error:', error);
+    console.error('❌ AI Chat error:', error);
     console.error('Error stack:', error.stack);
     console.error('Error details:', {
       message: error.message,
@@ -74,12 +86,12 @@ Context: ${context || 'General study help'}
       status: error.status
     });
     
-    // Check if it's a Gemini API error
+    // Check if it's a Groq API error
     let errorMessage = 'Failed to generate response';
     let statusCode = 500;
     
     if (error.message?.includes('API key')) {
-      errorMessage = 'API key configuration error. Please check your Gemini API keys.';
+      errorMessage = 'API key configuration error. Please check your Groq API key.';
       statusCode = 503;
     } else if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
       errorMessage = 'API rate limit exceeded. Please try again in a moment.';
