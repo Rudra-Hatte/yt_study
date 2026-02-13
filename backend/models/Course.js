@@ -91,6 +91,34 @@ const courseSchema = new mongoose.Schema({
     default: 'intermediate'
   },
   
+  // Simple videos array for generated courses
+  videos: [{
+    id: String,
+    title: String,
+    youtubeId: String,
+    duration: String,
+    description: String,
+    completed: { type: Boolean, default: false },
+    channelTitle: String,
+    thumbnailUrl: String,
+    order: Number
+  }],
+  
+  // Duration of the course
+  duration: String,
+  
+  // Total lessons count
+  totalLessons: {
+    type: Number,
+    default: 0
+  },
+  
+  // Is this an AI-generated course
+  isGenerated: {
+    type: Boolean,
+    default: false
+  },
+  
   // Enhanced structure for methodology support
   topic: {
     type: String,

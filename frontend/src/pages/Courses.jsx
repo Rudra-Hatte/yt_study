@@ -2,74 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext_simple';
-import { MOCK_COURSES } from '../utils/mockData';
+import { useCourse } from '../contexts/CourseContext';
 import SkeletonCourseCard from '../components/SkeletonCourseCard';
 import toast from 'react-hot-toast';
 
 const Courses = () => {
   const { user } = useAuth();
-  const [courses, setCourses] = useState([]);
+  const { myCourses, loading: contextLoading, fetchMyCourses, getCourseProgress } = useCourse();
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCourseUrl, setNewCourseUrl] = useState('');
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
-
-  const fetchCourses = async () => {
-    try {
-      // Mock data with professional thumbnails
-      setTimeout(() => {
-        setCourses([
-          {
-            id: 1,
-            title: 'Complete React.js Tutorial',
-            description: 'Learn React from scratch with this comprehensive tutorial covering hooks, components, and state management.',
-            thumbnail: `https://placehold.co/600x400/3b82f6/ffffff?text=${encodeURIComponent('React.js\nMastery')}`,
-            duration: '3h 45m',
-            progress: 45,
-            totalLessons: 24,
-            completedLessons: 18,
-            createdAt: '2024-01-15',
-            status: 'in-progress',
-            level: 'Intermediate'
-          },
-          {
-            id: 2,
-            title: 'Node.js Backend Development',
-            description: 'Build scalable backend applications with Node.js, Express, and MongoDB.',
-            thumbnail: `https://placehold.co/600x400/16a34a/ffffff?text=${encodeURIComponent('Node.js\nBackend')}`,
-            duration: '5h 20m',
-            progress: 45,
-            totalLessons: 32,
-            completedLessons: 14,
-            createdAt: '2024-01-10',
-            status: 'in-progress',
-            level: 'Advanced'
-          },
-          {
-            id: 3,
-            title: 'Machine Learning Fundamentals',
-            description: 'Introduction to machine learning concepts, algorithms, and practical applications.',
-            thumbnail: `https://placehold.co/600x400/8b5cf6/ffffff?text=${encodeURIComponent('ML\nFundamentals')}`,
-            duration: '8h 15m',
-            progress: 100,
-            totalLessons: 1,
-            completedLessons: 1,
-            createdAt: '2024-01-05',
-            status: 'completed',
-            level: 'Advanced'
-          }
-        ]);
-        setLoading(false);
-      }, 1500); // Simulate network delay
-    } catch (error) {
-      toast.error('Error fetching courses.');
+    const loadCourses = async () => {
+      setLoading(true);
+      await fetchMyCourses();
       setLoading(false);
-    }
-  };
+    };
+    loadCourses();
+  }, [fetchMyCourses]);
 
   const handleCreateCourse = async (e) => {
     e.preventDefault();
@@ -89,16 +41,26 @@ const Courses = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'completed':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Completed</span>;
-      case 'in-progress':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">In Progress</span>;
-      default:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">Not Started</span>;
+  const getStatusBadge = (course) => {
+    const progress = getCourseProgress(course._id || course.id);
+    if (progress === 100) {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Completed</span>;
+    } else if (progress > 0) {
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">In Progress</span>;
     }
+    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">Not Started</span>;
   };
+
+  // Format courses for display
+  const courses = myCourses.map(course => ({
+    ...course,
+    id: course._id || course.id,
+    progress: getCourseProgress(course._id || course.id),
+    totalLessons: course.videos?.length || course.totalLessons || 0,
+    completedLessons: 0, // Will be calculated from progress
+    level: course.difficulty ? course.difficulty.charAt(0).toUpperCase() + course.difficulty.slice(1) : course.level || 'Beginner',
+    thumbnail: course.thumbnail || `https://placehold.co/600x400/3b82f6/ffffff?text=${encodeURIComponent(course.title?.substring(0, 20) || 'Course')}`
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-8">
@@ -214,7 +176,7 @@ const Courses = () => {
                         'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'}`}>
                         {course.level}
                       </span>
-                      {getStatusBadge(course.status)}
+                      {getStatusBadge(course)}
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">{course.title}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{course.description}</p>
@@ -247,13 +209,13 @@ const Courses = () => {
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📚</div>
             <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">No courses yet</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Create your first course by pasting a YouTube URL</p>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="btn-primary"
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Create your first AI-powered course</p>
+            <Link
+              to="/create-course"
+              className="btn-primary inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
             >
               Create Your First Course
-            </button>
+            </Link>
           </div>
         )}
       </div>

@@ -6,7 +6,7 @@ import QuizModal from '../components/QuizModal';
 import FlashcardModal from '../components/FlashcardModal';
 import SummaryModal from '../components/SummaryModal';
 import LoadingOverlay from '../components/LoadingOverlay';
-import { AI_SERVICE_URL } from '../config/api';
+import { AI_SERVICE_URL, API_URL } from '../config/api';
 import toast from 'react-hot-toast';
 
 const CourseView = () => {
@@ -14,6 +14,7 @@ const CourseView = () => {
   const { courses } = useCourse();
   const [currentVideo, setCurrentVideo] = useState(0);
   const [course, setCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showFlashcards, setShowFlashcards] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -23,11 +24,61 @@ const CourseView = () => {
   const [currentFlashcards, setCurrentFlashcards] = useState([]);
 
   useEffect(() => {
-    const foundCourse = courses.find(c => c.id === parseInt(courseId));
-    setCourse(foundCourse);
+    const fetchCourse = async () => {
+      setLoading(true);
+      
+      // First try to find in local courses (context)
+      let foundCourse = courses.find(c => 
+        (c._id === courseId) || 
+        (c.id === courseId) || 
+        (c.id === parseInt(courseId)) ||
+        (String(c._id) === String(courseId))
+      );
+      
+      if (foundCourse) {
+        setCourse(foundCourse);
+        setLoading(false);
+        return;
+      }
+      
+      // If not found locally, try to fetch from API
+      try {
+        const response = await fetch(`${API_URL}/api/courses/${courseId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setCourse(data);
+        } else {
+          console.error('Course not found');
+          toast.error('Course not found');
+        }
+      } catch (error) {
+        console.error('Error fetching course:', error);
+      }
+      
+      setLoading(false);
+    };
+    
+    fetchCourse();
   }, [courseId, courses]);
 
-  if (!course) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Course not found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">The course you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleVideoComplete = (videoIndex) => {
     const updatedCourse = { ...course };
