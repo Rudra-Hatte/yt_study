@@ -234,7 +234,6 @@ const CourseView = () => {
                     onClick={handleGenerateQuiz}
                     className="py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
                   >
-                    <span className="mr-2">=���</span>
                     Take Quiz
                   </motion.button>
                   <motion.button
@@ -243,7 +242,6 @@ const CourseView = () => {
                     onClick={handleGenerateFlashcards}
                     className="py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
                   >
-                    <span className="mr-2">=�Ħ</span>
                     Study Flashcards
                   </motion.button>
                   <motion.button
@@ -252,7 +250,6 @@ const CourseView = () => {
                     onClick={handleGenerateSummary}
                     className="py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
                   >
-                    <span className="mr-2">=���</span>
                     Summarize
                   </motion.button>
                 </div>
@@ -312,6 +309,9 @@ const CourseView = () => {
         onClose={() => setShowQuiz(false)}
         questions={currentQuiz}
         videoTitle={course.videos[currentVideo].title}
+        videoId={course.videos[currentVideo].youtubeId}
+        courseId={course._id || course.id}
+        courseName={course.title}
       />
 
       <FlashcardModal
