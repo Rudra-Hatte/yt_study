@@ -50,7 +50,7 @@ exports.createCourse = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   
-  const { title, description, category, tags, thumbnail, isPublic, difficulty } = req.body;
+  const { title, description, category, tags, thumbnail, isPublic, difficulty, videos, duration, isGenerated } = req.body;
   
   try {
     const newCourse = new Course({
@@ -58,13 +58,19 @@ exports.createCourse = async (req, res) => {
       description,
       creator: req.user.id,
       category,
+      topic: title, // Use title as topic for simpler courses
       tags: tags || [],
       thumbnail,
       isPublic: isPublic !== undefined ? isPublic : true,
-      difficulty: difficulty || 'intermediate'
+      difficulty: difficulty || 'intermediate',
+      videos: videos || [],
+      duration: duration || '',
+      totalLessons: videos ? videos.length : 0,
+      isGenerated: isGenerated || false
     });
     
     const course = await newCourse.save();
+    console.log(`✅ Course created: ${course.title} (ID: ${course._id})`);
     
     // Add course to user's created courses
     await User.findByIdAndUpdate(
@@ -74,8 +80,8 @@ exports.createCourse = async (req, res) => {
     
     res.json(course);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    console.error('Error creating course:', err.message);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 

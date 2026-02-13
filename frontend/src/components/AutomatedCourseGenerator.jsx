@@ -193,6 +193,8 @@ const AutomatedCourseGenerator = () => {
         completedLessons: 0,
         status: 'not-started',
         level: courseData.difficulty.charAt(0).toUpperCase() + courseData.difficulty.slice(1),
+        difficulty: courseData.difficulty,
+        category: 'Technology',
         videos: videosArray,
         createdAt: new Date().toISOString(),
         isGenerated: true
@@ -201,18 +203,33 @@ const AutomatedCourseGenerator = () => {
       setGenerationProgress({
         stage: 'Complete',
         progress: 100,
-        details: 'Perfect roadmap generated! Redirecting to your course...'
+        details: 'Perfect roadmap generated! Saving course...'
       });
 
-      // Add to courses list
+      // Add to courses list and save to backend
+      let savedCourse = mockGeneratedCourse;
       if (typeof addCourse === 'function') {
-        addCourse(mockGeneratedCourse);
-        toast.success('Course generated successfully!');
+        try {
+          savedCourse = await addCourse(mockGeneratedCourse);
+          console.log('✅ Course saved:', savedCourse);
+          toast.success('Course generated and saved successfully!');
+        } catch (err) {
+          console.error('Error saving course:', err);
+          toast.success('Course generated successfully!');
+        }
       }
 
+      setGenerationProgress({
+        stage: 'Complete',
+        progress: 100,
+        details: 'Redirecting to your course...'
+      });
+
       setTimeout(() => {
-        navigate(`/courses/${mockGeneratedCourse.id}`);
-      }, 2000);
+        // Use the saved course ID (either from backend _id or local id)
+        const courseId = savedCourse._id || savedCourse.id || mockGeneratedCourse.id;
+        navigate(`/courses/${courseId}`);
+      }, 1500);
 
     } catch (error) {
       console.error('Course generation error:', error);

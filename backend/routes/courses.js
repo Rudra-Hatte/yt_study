@@ -19,6 +19,21 @@ router.get('/', getCourses);
 // Search courses
 router.get('/search', searchCourses);
 
+// Get user's created courses (MY COURSES)
+router.get('/my-courses', auth, async (req, res) => {
+  try {
+    const Course = require('../models/Course');
+    const courses = await Course.find({ creator: req.user.id })
+      .sort({ createdAt: -1 })
+      .populate('creator', 'name avatar');
+    console.log(`📚 Found ${courses.length} courses for user ${req.user.id}`);
+    res.json(courses);
+  } catch (error) {
+    console.error('Error fetching user courses:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get user's enrolled courses
 router.get('/enrolled', auth, async (req, res) => {
   try {
