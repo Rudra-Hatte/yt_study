@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Line, Doughnut } from 'react-chartjs-2';
+import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,6 +8,7 @@ import {
   PointElement,
   LineElement,
   ArcElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -17,7 +18,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext_simple';
 import { useCourses } from '../contexts/CourseContext';
 import LearningProfileModal from '../components/LearningProfileModal';
-import { Settings, Sprout, Rocket, Eye, Headphones, Target, Zap, Trophy, Medal, Award as AwardIcon, TrendingUp } from 'lucide-react';
+import QuizHistoryModal from '../components/QuizHistoryModal';
+import { API_URL } from '../config/api';
+import { Settings, Sprout, Rocket, Eye, Headphones, Target, Zap, Trophy, Medal, Award as AwardIcon, TrendingUp, ClipboardList, X, Clock, CheckCircle } from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(
@@ -26,6 +29,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   ArcElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -82,6 +86,15 @@ const Dashboard = () => {
   });
   const [personalizedRecommendations, setPersonalizedRecommendations] = useState([]);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showQuizHistoryModal, setShowQuizHistoryModal] = useState(false);
+  const [quizStats, setQuizStats] = useState({
+    totalQuizzes: 0,
+    averageScore: 0,
+    weeklyQuizCount: [0, 0, 0, 0, 0, 0, 0],
+    weeklyAvgScores: [0, 0, 0, 0, 0, 0, 0],
+    recentAttempts: []
+  });
+  const [quizHistory, setQuizHistory] = useState([]);
 
   useEffect(() => {
     if (user) {
@@ -94,6 +107,9 @@ const Dashboard = () => {
         console.error('Learning profile fetch failed:', err);
         // Generate recommendations with default profile
         generatePersonalizedRecommendations(learningProfile);
+      });
+      fetchQuizStats().catch(err => {
+        console.error('Quiz stats fetch failed:', err);
       });
     }
   }, [user]);
@@ -220,6 +236,55 @@ const Dashboard = () => {
       console.log('Using default learning profile');
       // Generate recommendations with default profile
       generatePersonalizedRecommendations(learningProfile);
+    }
+  };
+
+  // Fetch quiz stats for dashboard
+  const fetchQuizStats = async () => {
+    if (!user?.token) {
+      console.log('No user token, skipping quiz stats fetch');
+      return;
+    }
+    
+    try {
+      console.log('Fetching quiz stats...');
+      const response = await fetch(`${API_URL}/api/quizzes/stats`, {
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      
+      if (response.ok) {
+        const stats = await response.json();
+        console.log('Quiz stats received:', stats);
+        setQuizStats(stats);
+      } else {
+        console.error('Failed to fetch quiz stats:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching quiz stats:', error);
+    }
+  };
+
+  // Fetch full quiz history
+  const fetchQuizHistory = async () => {
+    if (!user?.token) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_URL}/api/quizzes/history`, {
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      
+      if (response.ok) {
+        const history = await response.json();
+        setQuizHistory(history);
+      }
+    } catch (error) {
+      console.error('Error fetching quiz history:', error);
     }
   };
 
@@ -399,23 +464,32 @@ const Dashboard = () => {
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 overflow-hidden relative cursor-pointer"
+            onClick={() => {
+              fetchQuizHistory();
+              setShowQuizHistoryModal(true);
+            }}
           >
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Study Time</h3>
-            {dashboardData.stats.totalStudyTime === 0 ? (
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Total Quizzes</h3>
+              <ClipboardList className="w-5 h-5 text-indigo-500" />
+            </div>
+            {quizStats.totalQuizzes === 0 ? (
               <motion.p
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ repeat: Infinity, duration: 2, delay: 0.4 }}
                 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2"
               >
-                0h
+                0
               </motion.p>
             ) : (
               <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
-                {`${(dashboardData.stats.totalStudyTime / 60).toFixed(1)}h`}
+                {quizStats.totalQuizzes}
               </p>
             )}
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Total hours studied</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              {quizStats.averageScore > 0 ? `Avg score: ${quizStats.averageScore}%` : 'Quizzes taken'}
+            </p>
           </motion.div>
 
           <motion.div
@@ -444,10 +518,17 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 relative"
+            className="bg-white dark:bg-dark-800 p-6 rounded-xl shadow-sm border border-transparent dark:border-dark-700 relative cursor-pointer"
+            onClick={() => {
+              fetchQuizHistory();
+              setShowQuizHistoryModal(true);
+            }}
           >
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Weekly Progress</h3>
-            {dashboardData.learningProgress.datasets[0].data.every(val => val === 0) ? (
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Weekly Progress</h3>
+              <span className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">View History →</span>
+            </div>
+            {quizStats.weeklyQuizCount.every(val => val === 0) ? (
               <div className="relative h-64 flex items-center justify-center">
                 {/* Placeholder Chart Background */}
                 <div className="absolute inset-0 flex items-end justify-around px-8 pb-12">
@@ -475,13 +556,47 @@ const Dashboard = () => {
                     animate={{ y: [0, -10, 0] }}
                     transition={{ repeat: Infinity, duration: 3 }}
                   >
-                    <TrendingUp className="w-12 h-12 text-indigo-400 dark:text-indigo-500 mx-auto mb-3" />
+                    <ClipboardList className="w-12 h-12 text-indigo-400 dark:text-indigo-500 mx-auto mb-3" />
                   </motion.div>
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">Start learning to see your progress!</p>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">Take quizzes to see your progress!</p>
                 </motion.div>
               </div>
             ) : (
-              <Line data={dashboardData.learningProgress} options={{ responsive: true }} />
+              <div className="h-64">
+                <Bar
+                  data={{
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                      {
+                        label: 'Quizzes Taken',
+                        data: quizStats.weeklyQuizCount,
+                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        borderRadius: 8,
+                      },
+                      {
+                        label: 'Avg Score %',
+                        data: quizStats.weeklyAvgScores,
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderRadius: 8,
+                      }
+                    ]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'top',
+                      }
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true
+                      }
+                    }
+                  }}
+                />
+              </div>
             )}
           </motion.div>
 
@@ -717,6 +832,13 @@ const Dashboard = () => {
             setLearningProfile(newProfile);
             generatePersonalizedRecommendations(newProfile);
           }}
+        />
+
+        {/* Quiz History Modal */}
+        <QuizHistoryModal
+          isOpen={showQuizHistoryModal}
+          onClose={() => setShowQuizHistoryModal(false)}
+          quizHistory={quizHistory}
         />
       </div>
     </div>

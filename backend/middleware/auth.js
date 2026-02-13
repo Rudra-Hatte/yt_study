@@ -4,20 +4,48 @@ const apiKeyRotator = require('../config/apiKeyRotator');
 require('dotenv').config();
 
 module.exports = function (req, res, next) {
-  // Get token from header
-  const token = req.header('x-auth-token');
+  // Get token from header - support both x-auth-token and Authorization: Bearer
+  let token = req.header('x-auth-token');
+  
+  // If not found in x-auth-token, try Authorization header
+  if (!token) {
+    const authHeader = req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    }
+  }
 
   // Check if no token
   if (!token) {
     return res.status(401).json({ msg: 'No token, authorization denied' });
   }
 
+  // Handle mock tokens for development (when frontend runs without proper backend login)
+  if (token.startsWith('mock-jwt-token-')) {
+    console.log('⚠️ Mock token detected - using development user');
+    // Create a development user ID based on the token timestamp
+    const mockTimestamp = token.split('-').pop();
+    req.user = { 
+      id: '000000000000000000000001', // Fixed dev user ID
+      isMockUser: true 
+    };
+    return next();
+  }
+
   // Verify token
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded.user;
+    // Support both token formats: { user: { id: ... } } and { userId: ... }
+    if (decoded.user) {
+      req.user = decoded.user;
+    } else if (decoded.userId) {
+      req.user = { id: decoded.userId };
+    } else {
+      return res.status(401).json({ msg: 'Invalid token structure' });
+    }
     next();
   } catch (err) {
+    console.error('Token verification error:', err.message);
     res.status(401).json({ msg: 'Token is not valid' });
   }
 };

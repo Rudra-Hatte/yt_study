@@ -309,6 +309,9 @@ const CourseView = () => {
         onClose={() => setShowQuiz(false)}
         questions={currentQuiz}
         videoTitle={course.videos[currentVideo].title}
+        videoId={course.videos[currentVideo].youtubeId}
+        courseId={course._id || course.id}
+        courseName={course.title}
       />
 
       <FlashcardModal
