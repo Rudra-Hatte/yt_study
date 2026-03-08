@@ -23,6 +23,9 @@
     "moment": "^2.29.4",
     "mongoose": "^7.5.0",
     "node-cron": "^3.0.2",
+    "openai": "^4.20.1",
+    "cosine-similarity": "^1.0.1",
+    "natural": "^6.8.0",
     "validator": "^13.11.0"
   },
   "devDependencies": {

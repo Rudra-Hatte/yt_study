@@ -1,4 +1,5 @@
 const Groq = require('groq-sdk');
+const { getRAGService } = require('../ragService');
 
 // Initialize Groq client
 const getGroqClient = () => {
@@ -10,18 +11,22 @@ const getGroqClient = () => {
 };
 
 /**
- * Generate flashcards using Groq AI (Llama 3.3) based on video title
+ * Generate flashcards using Groq AI (Llama 3.3) with RAG enhancement
  * @param {string} videoId - The YouTube video ID
  * @param {string} title - The video title
  * @param {number} numCards - Number of flashcards to generate (default: 10)
+ * @param {Object} options - Additional options including RAG context
  * @returns {Array} Array of flashcards with front and back content
  */
-async function generateFlashcards(videoId, title, numCards = 10) {
+async function generateFlashcards(videoId, title, numCards = 10, options = {}) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  console.log('📚 Generating flashcards for video:', videoUrl);
+  console.log('📚 Generating RAG-enhanced flashcards for video:', videoUrl);
   console.log('📝 Title:', title);
   
-  const prompt = `You are an expert at creating educational flashcards. Based on the YouTube video title and topic, create ${numCards} effective flashcards that highlight key concepts, definitions, and principles.
+  const { courseId, transcript, enableRAG = true } = options;
+  
+  // Base prompt
+  let prompt = `You are an expert at creating educational flashcards. Based on the YouTube video title and topic, create ${numCards} effective flashcards that highlight key concepts, definitions, and principles.
 
 Video Title: "${title}"
 Video URL: ${videoUrl}
@@ -39,6 +44,43 @@ IMPORTANT: Return ONLY valid JSON with NO markdown formatting, NO code blocks, N
 
 The JSON must have this exact structure:
 {"flashcards":[{"front":"Question or term here","back":"Answer or explanation here","tags":["relevant","topic","tags"]}]}`;
+
+  let ragMetadata = {
+    enhanced: false,
+    sourcesUsed: [],
+    contextCount: 0,
+    averageRelevance: 0,
+    recommendations: []
+  };
+
+  // Attempt RAG enhancement
+  if (enableRAG) {
+    try {
+      const ragService = getRAGService();
+      const ragResult = await ragService.generateEnhancedFlashcards(
+        videoId, 
+        title, 
+        transcript, 
+        { courseId, numCards }
+      );
+      
+      if (ragResult && ragResult.enhancedPrompt) {
+        prompt = ragResult.enhancedPrompt;
+        ragMetadata = {
+          enhanced: true,
+          sourcesUsed: ragResult.contextInfo?.sourcesUsed || [],
+          contextCount: ragResult.contextInfo?.contextCount || 0,
+          averageRelevance: ragResult.contextInfo?.averageRelevance || 0,
+          recommendations: ragResult.recommendations || []
+        };
+        
+        console.log(`🎯 Using RAG-enhanced flashcards prompt with ${ragMetadata.contextCount} context sources`);
+      }
+    } catch (ragError) {
+      console.log('⚠️ RAG enhancement failed, using fallback:', ragError.message);
+      ragMetadata.recommendations.push('RAG enhancement unavailable');
+    }
+  }
 
   try {
     console.log('🤖 Calling Groq AI (Llama 3.3) for flashcards...');
@@ -121,12 +163,36 @@ The JSON must have this exact structure:
       }
     }
     
-    console.log(`✅ Generated ${result.flashcards?.length || 0} flashcards`);
-    return result;
+    // Add RAG metadata to the result
+    const finalResult = {
+      ...result,
+      ragMetadata
+    };
+    
+    console.log(`✅ Generated ${ragMetadata.enhanced ? 'RAG-enhanced' : 'standard'} ${result.flashcards?.length || 0} flashcards`);
+    return finalResult;
     
   } catch (error) {
     console.error('❌ Flashcard generation error:', error.message);
-    throw new Error(`Failed to generate flashcards: ${error.message}`);
+    
+    // Return fallback result with RAG metadata
+    const fallbackResult = {
+      flashcards: [{
+        front: `What is ${title}?`,
+        back: 'This is a fallback flashcard generated due to processing error.',
+        tags: ['fallback', 'error']
+      }],
+      ragMetadata: {
+        enhanced: false,
+        sourcesUsed: [],
+        contextCount: 0,
+        averageRelevance: 0,
+        recommendations: ['Flashcard generation failed'],
+        error: error.message
+      }
+    };
+    
+    return fallbackResult;
   }
 }
 

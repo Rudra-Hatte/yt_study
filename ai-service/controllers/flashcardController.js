@@ -3,7 +3,7 @@ const { generateFlashcards } = require('../services/gemini/flashcardGenerator');
 // Generate flashcards from a video
 exports.createFlashcards = async (req, res, next) => {
   try {
-    const { videoId, numCards = 10, title } = req.body;
+    const { videoId, numCards = 10, title, courseId, transcript, enableRAG = true } = req.body;
     
     console.log('🃏 Flashcard generation requested for video:', videoId);
     
@@ -15,14 +15,29 @@ exports.createFlashcards = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Video title is required' });
     }
     
-    // Generate flashcards using Groq AI (no transcript needed)
-    console.log('🤖 Generating flashcards with Groq AI...');
-    const flashcards = await generateFlashcards(videoId, title, numCards);
+    // Generate RAG-enhanced flashcards using Groq AI
+    console.log('🤖 Generating RAG-enhanced flashcards with Groq AI...');
+    const flashcardOptions = {
+      courseId,
+      transcript,
+      enableRAG
+    };
+    
+    const flashcards = await generateFlashcards(videoId, title, numCards, flashcardOptions);
     
     console.log('✅ Flashcards generated successfully');
     
-    // Send response
-    res.json({ success: true, data: flashcards });
+    // Send response with RAG metadata
+    res.json({ 
+      success: true, 
+      data: flashcards,
+      ragInfo: flashcards.ragMetadata ? {
+        enhanced: flashcards.ragMetadata.enhanced,
+        sourcesUsed: flashcards.ragMetadata.sourcesUsed?.length || 0,
+        contextCount: flashcards.ragMetadata.contextCount || 0,
+        recommendations: flashcards.ragMetadata.recommendations
+      } : null
+    });
   } catch (error) {
     console.error('❌ Flashcard generation error:', error.message);
     console.error('Stack:', error.stack);

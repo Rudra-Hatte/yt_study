@@ -7,6 +7,12 @@ const curatorController = require('../controllers/curatorController');
 const courseStructureController = require('../controllers/courseStructureController');
 const chatController = require('../controllers/chatController');
 
+// Import RAG routes
+const ragRoutes = require('./rag');
+
+// RAG routes (Retrieval-Augmented Generation)
+router.use('/rag', ragRoutes);
+
 // Quiz routes
 router.post('/quiz', quizController.createQuiz);
 

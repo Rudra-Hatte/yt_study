@@ -215,6 +215,44 @@ const courseSchema = new mongoose.Schema({
         max: 1
       }
     }
+  },
+
+  // RAG (Retrieval-Augmented Generation) fields
+  ragData: {
+    isIndexed: {
+      type: Boolean,
+      default: false
+    },
+    lastIndexed: Date,
+    courseEmbeddingId: String, // ID of course overview embedding
+    videoEmbeddingIds: [String], // IDs of all video embeddings in this course
+    knowledgeGraph: {
+      concepts: [{
+        name: String,
+        connections: [{
+          concept: String,
+          relationship: String,
+          strength: Number // 0-1 confidence score
+        }]
+      }]
+    },
+    searchOptimization: {
+      primaryTopics: [String],
+      secondaryTopics: [String],
+      skillsAddressed: [String],
+      targetAudience: String
+    },
+    ragEnhancements: {
+      courseStructureEnhanced: {
+        type: Boolean,
+        default: false
+      },
+      recommendationsEnhanced: {
+        type: Boolean,
+        default: false
+      },
+      lastEnhanced: Date
+    }
   }
 }, {
   timestamps: true
@@ -226,5 +264,57 @@ courseSchema.index({ category: 1 });
 courseSchema.index({ topic: 1 });
 courseSchema.index({ difficulty: 1 });
 courseSchema.index({ 'structure.totalDuration': 1 });
+
+// RAG-specific indexes
+courseSchema.index({ 'ragData.isIndexed': 1 });
+courseSchema.index({ 'ragData.searchOptimization.primaryTopics': 1 });
+courseSchema.index({ 'ragData.searchOptimization.skillsAddressed': 1 });
+courseSchema.index({ 'ragData.lastIndexed': -1 });
+
+// Instance method to update RAG data
+courseSchema.methods.updateRagData = function(ragUpdateData) {
+  this.ragData = this.ragData || {};
+  Object.assign(this.ragData, ragUpdateData);
+  this.ragData.lastIndexed = new Date();
+  return this.save();
+};
+
+// Instance method to add concept to knowledge graph
+courseSchema.methods.addConceptConnection = function(conceptName, connectedConcept, relationship, strength) {
+  this.ragData = this.ragData || {};
+  this.ragData.knowledgeGraph = this.ragData.knowledgeGraph || { concepts: [] };
+  
+  let concept = this.ragData.knowledgeGraph.concepts.find(c => c.name === conceptName);
+  if (!concept) {
+    concept = { name: conceptName, connections: [] };
+    this.ragData.knowledgeGraph.concepts.push(concept);
+  }
+  
+  // Add or update connection
+  let connection = concept.connections.find(conn => conn.concept === connectedConcept);
+  if (!connection) {
+    concept.connections.push({
+      concept: connectedConcept,
+      relationship,
+      strength
+    });
+  } else {
+    connection.relationship = relationship;
+    connection.strength = strength;
+  }
+  
+  return this.save();
+};
+
+// Static method to find courses by topic similarity
+courseSchema.statics.findSimilarByTopic = function(topics, limit = 10) {
+  return this.find({
+    $or: [
+      { 'ragData.searchOptimization.primaryTopics': { $in: topics } },
+      { 'ragData.searchOptimization.secondaryTopics': { $in: topics } },
+      { tags: { $in: topics } }
+    ]
+  }).limit(limit);
+};
 
 module.exports = mongoose.model('Course', courseSchema);
