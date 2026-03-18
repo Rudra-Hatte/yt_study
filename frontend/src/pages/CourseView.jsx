@@ -23,6 +23,14 @@ const CourseView = () => {
   const [currentQuiz, setCurrentQuiz] = useState([]);
   const [currentFlashcards, setCurrentFlashcards] = useState([]);
 
+  const getVideoTopic = (video, index) => {
+    if (video?.coversTopic) return video.coversTopic;
+    if (Array.isArray(course?.plannedTopics) && course.plannedTopics[index]) {
+      return course.plannedTopics[index];
+    }
+    return null;
+  };
+
   useEffect(() => {
     const fetchCourse = async () => {
       setLoading(true);
@@ -230,9 +238,9 @@ const CourseView = () => {
                 />
               </div>
               <div className="p-4">
-                {course.videos[currentVideo].coversTopic && (
+                {getVideoTopic(course.videos[currentVideo], currentVideo) && (
                   <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wider mb-2">
-                    📚 Topic: {course.videos[currentVideo].coversTopic}
+                    📚 Topic: {getVideoTopic(course.videos[currentVideo], currentVideo)}
                   </p>
                 )}
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -311,8 +319,8 @@ const CourseView = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      {video.coversTopic && (
-                        <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">{video.coversTopic}</p>
+                      {getVideoTopic(video, index) && (
+                        <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">{getVideoTopic(video, index)}</p>
                       )}
                       <h3 className="font-medium text-gray-900 truncate">{video.title}</h3>
                       <p className="text-sm text-gray-500">{video.duration}</p>

@@ -394,27 +394,126 @@ async function getCandidateVideosFromTopics(topic, difficulty, learningTopics, l
   const queryPool = [];
 
   for (const subtopic of learningTopics) {
-    queryPool.push(`${topic} ${subtopic} ${level} tutorial`);
-    queryPool.push(`${topic} ${subtopic} explained`);
+    queryPool.push({ query: `${topic} ${subtopic} ${level} tutorial`, sourceTopic: subtopic });
+    queryPool.push({ query: `${topic} ${subtopic} explained`, sourceTopic: subtopic });
   }
 
-  queryPool.push(...buildSearchQueries(topic, difficulty));
+  for (const q of buildSearchQueries(topic, difficulty)) {
+    queryPool.push({ query: q, sourceTopic: null });
+  }
 
-  const uniqueQueries = Array.from(new Set(queryPool.map((q) => q.trim()).filter(Boolean))).slice(0, 24);
+  const uniqueQueries = [];
+  const seen = new Set();
+  for (const item of queryPool) {
+    const q = String(item.query || '').trim();
+    if (!q || seen.has(q)) continue;
+    seen.add(q);
+    uniqueQueries.push({ query: q, sourceTopic: item.sourceTopic || null });
+    if (uniqueQueries.length >= 24) break;
+  }
+
   const perQuery = Math.max(4, Math.ceil(limit / uniqueQueries.length));
   const all = [];
 
-  for (const query of uniqueQueries) {
-    const videos = await searchYouTubeVideos(query, perQuery, {
+  for (const item of uniqueQueries) {
+    const videos = await searchYouTubeVideos(item.query, perQuery, {
       videoDuration: 'any',
       requireCaptions: false,
       order: 'relevance'
     });
-    all.push(...videos);
+    all.push(...videos.map((v) => ({ ...v, sourceTopic: item.sourceTopic })));
   }
 
-  const deduped = Array.from(new Map(all.map((v) => [v.videoId, v])).values());
+  const dedupedMap = new Map();
+  for (const v of all) {
+    const existing = dedupedMap.get(v.videoId);
+    if (!existing) {
+      dedupedMap.set(v.videoId, v);
+      continue;
+    }
+    // Prefer preserving a candidate that carries a sourceTopic hint.
+    if (!existing.sourceTopic && v.sourceTopic) {
+      dedupedMap.set(v.videoId, { ...existing, sourceTopic: v.sourceTopic });
+    }
+  }
+
+  const deduped = Array.from(dedupedMap.values());
   return deduped.slice(0, limit);
+}
+
+function topicRelevanceScore(video, learningTopic = '') {
+  const topicTokens = toTokens(learningTopic);
+  if (topicTokens.length === 0) return 0;
+
+  const text = `${video.title || ''} ${video.description || ''} ${(video.tags || []).join(' ')}`;
+  const textTokens = toTokens(text);
+  const textRel = jaccard(topicTokens, textTokens);
+
+  const conceptRel = (video.matchedConcepts || []).some((c) => {
+    const ct = toTokens(c);
+    return ct.some((t) => topicTokens.includes(t));
+  }) ? 0.35 : 0;
+
+  const sourceBoost = video.sourceTopic && jaccard(toTokens(video.sourceTopic), topicTokens) > 0 ? 0.45 : 0;
+  return textRel + conceptRel + sourceBoost;
+}
+
+function selectTopicFirstPath(candidates, learningTopics, budget) {
+  const selected = [];
+  const usedIds = new Set();
+  let usedMinutes = 0;
+
+  // Pass 1: one best video per planned topic, in topic order.
+  for (const plannedTopic of learningTopics) {
+    const best = candidates
+      .filter((c) => !usedIds.has(c.videoId))
+      .map((c) => ({
+        ...c,
+        _topicRel: topicRelevanceScore(c, plannedTopic)
+      }))
+      .filter((c) => c._topicRel > 0)
+      .sort((a, b) => {
+        if (b._topicRel !== a._topicRel) return b._topicRel - a._topicRel;
+        return b.finalScore - a.finalScore;
+      })[0];
+
+    if (!best) continue;
+    if (usedMinutes + best.durationMinutes > budget.maxMinutes) continue;
+
+    selected.push({ ...best, assignedTopic: plannedTopic });
+    usedIds.add(best.videoId);
+    usedMinutes += best.durationMinutes;
+  }
+
+  // Pass 2: if below minimum duration, add extra videos anchored to the same topic order.
+  if (usedMinutes < budget.minMinutes) {
+    for (const plannedTopic of learningTopics) {
+      if (usedMinutes >= budget.minMinutes) break;
+
+      const extras = candidates
+        .filter((c) => !usedIds.has(c.videoId))
+        .map((c) => ({
+          ...c,
+          _topicRel: topicRelevanceScore(c, plannedTopic)
+        }))
+        .filter((c) => c._topicRel > 0)
+        .sort((a, b) => {
+          if (b._topicRel !== a._topicRel) return b._topicRel - a._topicRel;
+          return b.finalScore - a.finalScore;
+        });
+
+      for (const extra of extras) {
+        if (usedMinutes >= budget.minMinutes) break;
+        if (usedMinutes + extra.durationMinutes > budget.maxMinutes) continue;
+
+        selected.push({ ...extra, assignedTopic: plannedTopic });
+        usedIds.add(extra.videoId);
+        usedMinutes += extra.durationMinutes;
+      }
+    }
+  }
+
+  return { selected, usedMinutes };
 }
 
 // Map video concepts to closest learning topic
@@ -454,7 +553,7 @@ function formatFinalVideos(ordered, learningTopics = []) {
     thumbnailUrl: v.thumbnailUrl,
     difficulty: v.estimatedLevel,
     concepts: v.matchedConcepts,
-    coversTopic: findBestMatchingTopic(v.title, v.matchedConcepts, learningTopics),
+    coversTopic: v.assignedTopic || findBestMatchingTopic(v.title, v.matchedConcepts, learningTopics),
     rationale: `Selected for relevance, level match, and concept progression. Covers: ${v.matchedConcepts.slice(0, 3).join(', ') || 'core topic concepts'}`,
     score: Number(v.finalScore.toFixed(4))
   }));
@@ -474,8 +573,15 @@ async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration 
   const enriched = await enrichMetadata(candidates, 60);
   const scored = scoreCandidates(enriched, topic, difficulty, profile);
 
-  const diverseTop = mmrSelect(scored, 24, 0.75);
-  let { selected, usedMinutes } = selectWithinBudget(diverseTop, profile, budget);
+  const diverseTop = mmrSelect(scored, 28, 0.75);
+  let { selected, usedMinutes } = selectTopicFirstPath(diverseTop, learningTopics, budget);
+
+  // Safety fallback to the generic coverage selector if topic-first yielded too few lessons.
+  if (selected.length < Math.min(4, learningTopics.length)) {
+    const fallback = selectWithinBudget(diverseTop, profile, budget);
+    selected = fallback.selected;
+    usedMinutes = fallback.usedMinutes;
+  }
 
   // If time budget is still too low, force-fill with longer high-scoring videos.
   if (usedMinutes < budget.minMinutes) {
@@ -492,7 +598,7 @@ async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration 
     }
   }
 
-  const ordered = orderByPrerequisites(selected, profile);
+  const ordered = selected;
   const videos = formatFinalVideos(ordered, learningTopics);
   const learningPath = buildModules(videos);
 

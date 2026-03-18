@@ -105,7 +105,11 @@ const courseSchema = new mongoose.Schema({
     completed: { type: Boolean, default: false },
     channelTitle: String,
     thumbnailUrl: String,
-    order: Number
+    order: Number,
+    coversTopic: String,
+    concepts: [String],
+    rationale: String,
+    score: Number
   }],
   
   // Duration of the course

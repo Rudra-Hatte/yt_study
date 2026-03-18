@@ -170,7 +170,10 @@ const AutomatedCourseGenerator = () => {
         order: index,
         channelTitle: video.channelTitle,
         thumbnailUrl: video.thumbnailUrl,
-        concepts: video.concepts || []
+        concepts: video.concepts || [],
+        coversTopic: video.coversTopic || null,
+        rationale: video.rationale || null,
+        score: video.score
       })).filter((video) => !!video.youtubeId);
 
       if (videosArray.length === 0) {
@@ -191,6 +194,7 @@ const AutomatedCourseGenerator = () => {
         difficulty: courseData.difficulty,
         category: 'Technology',
         videos: videosArray,
+        plannedTopics: aiPlan?.metadata?.plannedTopics || [],
         createdAt: new Date().toISOString(),
         isGenerated: true
       };
