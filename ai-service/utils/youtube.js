@@ -163,22 +163,35 @@ const getVideoMetadata = async (videoId) => {
 };
 
 // Search YouTube videos by query
-const searchYouTubeVideos = async (query, maxResults = 10) => {
+const searchYouTubeVideos = async (query, maxResults = 10, options = {}) => {
   try {
     const youtubeKey = apiKeyRotator.getYoutubeKey();
+    const {
+      videoDuration = 'any',
+      requireCaptions = false,
+      order = 'relevance'
+    } = options;
+
+    const params = {
+      q: query,
+      part: 'snippet',
+      type: 'video',
+      maxResults,
+      order,
+      key: youtubeKey
+    };
+
+    if (videoDuration && videoDuration !== 'any') {
+      params.videoDuration = videoDuration;
+    }
+
+    if (requireCaptions) {
+      params.videoCaption = 'closedCaption';
+    }
     
     const response = await axios.get(
       `https://www.googleapis.com/youtube/v3/search`, {
-        params: {
-          q: query,
-          part: 'snippet',
-          type: 'video',
-          maxResults: maxResults,
-          order: 'relevance',
-          videoDuration: 'medium', // 4-20 minutes
-          videoCaption: 'closedCaption', // Only videos with captions
-          key: youtubeKey
-        }
+        params
       }
     );
     

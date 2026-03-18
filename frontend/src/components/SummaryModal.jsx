@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingSpinner } from './LoadingSpinner';
 import { AI_SERVICE_URL } from '../config/api';
-import { extractYouTubeCaptions } from '../utils/youtubeCaptions';
-import { transcribeWithUserHelp } from '../utils/speechToText';
-import toast from 'react-hot-toast';
 
 const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
   const [summary, setSummary] = useState(null);
@@ -22,47 +19,17 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
     setError(null);
     
     try {
-      let transcript = null;
-      
-      // Try browser-side caption extraction
-      try {
-        transcript = await extractYouTubeCaptions(videoId);
-        console.log('✅ Browser extraction successful');
-      } catch (browserError) {
-        console.log('⚠️ Browser extraction failed, using speech recognition...');
-        
-        // Silently fallback to speech-to-text
-        try {
-          toast.loading('📹 Please watch the complete video for best results!');
-          
-          transcript = await transcribeWithUserHelp(
-            (progress) => console.log(`Transcription progress: ${progress}%`),
-            (status) => {
-              if (status.includes('Transcribing')) {
-                toast.loading('📹 Capturing video content... Keep watching!');
-              } else {
-                toast.loading(status);
-              }
-            }
-          );
-          
-          console.log('✅ Speech-to-text transcription successful!');
-        } catch (speechError) {
-          console.log('⚠️ Speech-to-text also failed, letting backend try');
-        }
-      }
-      
-      // Send to backend with transcript
+      // Direct AI summary path without transcript dependency.
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/summary`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          transcript: transcript,
           videoId: videoId,
           title: videoTitle,
-          format: 'detailed'
+          format: 'detailed',
+          useRag: false
         }),
       });
 

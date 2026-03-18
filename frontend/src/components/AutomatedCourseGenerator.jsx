@@ -115,30 +115,29 @@ const AutomatedCourseGenerator = () => {
         details: 'AI is finding and curating the best YouTube videos for your learning path...'
       });
 
-      // Call AI service to search and curate YouTube videos
-      let curatedVideos = [];
-      try {
-        const videosResponse = await fetch(`${AI_SERVICE_URL}/api/ai/search-videos`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            topic: courseData.topic,
-            difficulty: courseData.difficulty,
-            numVideos: 8
-          }),
-        });
+      // Call AI service to generate a duration-aware course plan
+      const planResponse = await fetch(`${AI_SERVICE_URL}/api/ai/generate-course-ai`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: courseData.topic,
+          difficulty: courseData.difficulty,
+          duration: courseData.duration
+        }),
+      });
 
-        if (videosResponse.ok) {
-          const videosResult = await videosResponse.json();
-          if (videosResult.success && videosResult.data) {
-            curatedVideos = videosResult.data;
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching curated videos:', error);
+      if (!planResponse.ok) {
+        throw new Error('Failed to generate AI course plan');
       }
+
+      const planResult = await planResponse.json();
+      if (!planResult.success || !planResult.data) {
+        throw new Error(planResult.error || 'AI course plan was empty');
+      }
+
+      const aiPlan = planResult.data;
 
       await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -160,34 +159,30 @@ const AutomatedCourseGenerator = () => {
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Build videos array from curated results or fallback
-      const videosArray = curatedVideos.length > 0 
-        ? curatedVideos.map((video, index) => ({
-            id: `v${index + 1}`,
-            title: video.lessonTitle || video.title || `${index + 1}. ${courseData.topic} - Part ${index + 1}`,
-            youtubeId: video.videoId,
-            duration: '30:00', // Will be updated when video loads
-            description: video.description || video.rationale || `Learn about ${courseData.topic}`,
-            completed: false,
-            channelTitle: video.channelTitle,
-            thumbnailUrl: video.thumbnailUrl
-          }))
-        : Array(8).fill(null).map((_, index) => ({
-            id: `v${index + 1}`,
-            title: `${index + 1}. ${courseData.topic} - Lesson ${index + 1}`,
-            youtubeId: 'dQw4w9WgXcQ',
-            duration: '30:00',
-            description: `Learn about ${courseData.topic}`,
-            completed: false
-          }));
+      // Build videos from AI planner output with real durations and concept rationale
+      const videosArray = (aiPlan.videos || []).map((video, index) => ({
+        id: `v${index + 1}`,
+        title: video.title || `${index + 1}. ${courseData.topic} - Lesson ${index + 1}`,
+        youtubeId: video.youtubeId || video.videoId,
+        duration: video.duration || `${video.estimatedMinutes || 20} min`,
+        description: video.description || video.rationale || `Learn about ${courseData.topic}`,
+        completed: false,
+        order: index,
+        channelTitle: video.channelTitle,
+        thumbnailUrl: video.thumbnailUrl,
+        concepts: video.concepts || []
+      })).filter((video) => !!video.youtubeId);
 
-      // Mock course generation with real curated videos
+      if (videosArray.length === 0) {
+        throw new Error('No valid videos were returned for this topic/duration');
+      }
+
       const mockGeneratedCourse = {
         id: Date.now(),
-        title: `${courseData.topic} - Complete Guide`,
-        description: `Master ${courseData.topic} from beginner to advanced level. This AI-generated course covers all essential concepts with curated video lessons, quizzes, and flashcards.`,
-        thumbnail: curatedVideos[0]?.thumbnailUrl || `https://placehold.co/600x400/3b82f6/ffffff?text=${encodeURIComponent(courseData.topic.substring(0, 20))}`,
-        duration: courseData.duration,
+        title: aiPlan.title || `${courseData.topic} - Complete Guide`,
+        description: aiPlan.description || `Master ${courseData.topic} from beginner to advanced level. This AI-generated course covers essential concepts with curated video lessons.`,
+        thumbnail: videosArray[0]?.thumbnailUrl || `https://placehold.co/600x400/3b82f6/ffffff?text=${encodeURIComponent(courseData.topic.substring(0, 20))}`,
+        duration: aiPlan.estimatedHours || courseData.duration,
         progress: 0,
         totalLessons: videosArray.length,
         completedLessons: 0,

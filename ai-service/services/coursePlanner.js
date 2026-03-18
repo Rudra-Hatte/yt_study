@@ -1,4 +1,5 @@
 const { searchYouTubeVideos, getVideoMetadata } = require('../utils/youtube');
+const { chatWithFallback } = require('./modelClient');
 
 function toTokens(text = '') {
   return text
@@ -99,6 +100,49 @@ function buildSearchQueries(topic, difficulty) {
   ];
 }
 
+async function buildLearningTopics(topic, difficulty, duration) {
+  const fallback = getTopicProfile(topic, difficulty).essential;
+
+  try {
+    const prompt = `Create a practical learning-topic list for this course.
+Topic: ${topic}
+Difficulty: ${difficulty}
+Duration target: ${duration}
+
+Return JSON only in this schema:
+{"topics":["topic 1","topic 2","topic 3","topic 4","topic 5","topic 6"]}
+
+Rules:
+- Keep topics specific and beginner-friendly if difficulty is beginner.
+- Order from fundamentals to practical application.
+- No markdown.`;
+
+    const response = await chatWithFallback({
+      systemPrompt: 'You are an expert curriculum planner. Output strict JSON only.',
+      userPrompt: prompt,
+      temperature: 0.3,
+      maxTokens: 700
+    });
+
+    const text = (response.text || '').trim();
+    const jsonMatch = text.match(/```json\n?([\s\S]*?)\n?```/) || text.match(/```\n?([\s\S]*?)\n?```/) || text.match(/({[\s\S]*})/);
+    const payload = jsonMatch && jsonMatch[1] ? jsonMatch[1].trim() : text;
+    const parsed = JSON.parse(payload);
+
+    const topics = Array.isArray(parsed.topics)
+      ? parsed.topics.map((t) => String(t).trim()).filter(Boolean)
+      : [];
+
+    if (topics.length >= 3) {
+      return topics.slice(0, 10);
+    }
+  } catch (error) {
+    console.warn('⚠️ Topic planning fallback activated:', error.message);
+  }
+
+  return fallback;
+}
+
 function estimateLevelFromText(text = '') {
   const t = text.toLowerCase();
   const beginnerHits = ['beginner', 'intro', 'introduction', 'basics', 'fundamentals'].filter((k) => t.includes(k)).length;
@@ -155,7 +199,9 @@ function scoreCandidates(candidates, topic, difficulty, profile) {
     const levelScore = levelMatchScore(String(difficulty || 'beginner').toLowerCase(), estimatedLevel);
     const quality = qualityScore(video);
 
-    const finalScore = (0.4 * topicRel) + (0.25 * coverage) + (0.2 * levelScore) + (0.15 * quality);
+    const durationMinutes = video.durationMinutes || 12;
+    const tooShortPenalty = durationMinutes < 12 ? 0.55 : 1;
+    const finalScore = ((0.4 * topicRel) + (0.25 * coverage) + (0.2 * levelScore) + (0.15 * quality)) * tooShortPenalty;
 
     return {
       ...video,
@@ -166,7 +212,7 @@ function scoreCandidates(candidates, topic, difficulty, profile) {
       levelScore,
       quality,
       finalScore,
-      durationMinutes: video.durationMinutes || 12,
+      durationMinutes,
       _tokens: textTokens
     };
   });
@@ -343,6 +389,34 @@ async function getCandidateVideos(topic, difficulty, limit = 60) {
   return deduped.slice(0, limit);
 }
 
+async function getCandidateVideosFromTopics(topic, difficulty, learningTopics, limit = 90) {
+  const level = String(difficulty || 'beginner').toLowerCase();
+  const queryPool = [];
+
+  for (const subtopic of learningTopics) {
+    queryPool.push(`${topic} ${subtopic} ${level} tutorial`);
+    queryPool.push(`${topic} ${subtopic} explained`);
+  }
+
+  queryPool.push(...buildSearchQueries(topic, difficulty));
+
+  const uniqueQueries = Array.from(new Set(queryPool.map((q) => q.trim()).filter(Boolean))).slice(0, 24);
+  const perQuery = Math.max(4, Math.ceil(limit / uniqueQueries.length));
+  const all = [];
+
+  for (const query of uniqueQueries) {
+    const videos = await searchYouTubeVideos(query, perQuery, {
+      videoDuration: 'any',
+      requireCaptions: false,
+      order: 'relevance'
+    });
+    all.push(...videos);
+  }
+
+  const deduped = Array.from(new Map(all.map((v) => [v.videoId, v])).values());
+  return deduped.slice(0, limit);
+}
+
 function formatFinalVideos(ordered) {
   return ordered.map((v, idx) => ({
     id: String(idx + 1),
@@ -364,13 +438,35 @@ function formatFinalVideos(ordered) {
 async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration = '4-6 hours') {
   const profile = getTopicProfile(topic, difficulty);
   const budget = parseBudget(duration);
+  const learningTopics = await buildLearningTopics(topic, difficulty, duration);
 
-  const candidates = await getCandidateVideos(topic, difficulty, 64);
-  const enriched = await enrichMetadata(candidates, 30);
+  let candidates = await getCandidateVideosFromTopics(topic, difficulty, learningTopics, 96);
+  if (candidates.length < 20) {
+    const fallbackCandidates = await getCandidateVideos(topic, difficulty, 64);
+    candidates = Array.from(new Map([...candidates, ...fallbackCandidates].map((v) => [v.videoId, v])).values());
+  }
+
+  const enriched = await enrichMetadata(candidates, 60);
   const scored = scoreCandidates(enriched, topic, difficulty, profile);
 
   const diverseTop = mmrSelect(scored, 24, 0.75);
-  const { selected, usedMinutes } = selectWithinBudget(diverseTop, profile, budget);
+  let { selected, usedMinutes } = selectWithinBudget(diverseTop, profile, budget);
+
+  // If time budget is still too low, force-fill with longer high-scoring videos.
+  if (usedMinutes < budget.minMinutes) {
+    const remaining = diverseTop
+      .filter((c) => !selected.find((s) => s.videoId === c.videoId))
+      .filter((c) => c.durationMinutes >= 12)
+      .sort((a, b) => b.finalScore - a.finalScore);
+
+    for (const candidate of remaining) {
+      if (usedMinutes >= budget.minMinutes) break;
+      if (usedMinutes + candidate.durationMinutes > budget.maxMinutes) continue;
+      selected.push(candidate);
+      usedMinutes += candidate.durationMinutes;
+    }
+  }
+
   const ordered = orderByPrerequisites(selected, profile);
   const videos = formatFinalVideos(ordered);
   const learningPath = buildModules(videos);
@@ -388,7 +484,7 @@ async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration 
     videos,
     learningPath,
     roadmap: {
-      prerequisites: profile.essential.slice(0, 3),
+      prerequisites: learningTopics.slice(0, 3),
       outcomes: [
         `Understand essential ${topic} concepts for ${difficulty} level`,
         `Follow a prerequisite-safe ordered learning path`,
@@ -407,7 +503,8 @@ async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration 
       candidateCount: candidates.length,
       selectedCount: videos.length,
       usedMinutes,
-      budgetMinutes: budget
+      budgetMinutes: budget,
+      plannedTopics: learningTopics
     }
   };
 }

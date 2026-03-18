@@ -7,9 +7,9 @@ async function connectDatabase() {
     return mongoose.connection;
   }
 
-  const mongoUri = process.env.MONGODB_URI;
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
   if (!mongoUri) {
-    throw new Error('MONGODB_URI is not configured');
+    throw new Error('Mongo URI is not configured. Set MONGODB_URI (preferred) or MONGO_URI');
   }
 
   mongoose.set('strictQuery', true);

@@ -125,7 +125,8 @@ const CourseView = () => {
             videoId: videoId,
             title: videoTitle,
             numQuestions: 10,
-            difficulty: 'medium'
+            difficulty: 'medium',
+            useRag: false
           }),
         });
 
@@ -169,18 +170,8 @@ const CourseView = () => {
       setIsGenerating(true);
       
       const videoId = course.videos[currentVideo].youtubeId;
-      let transcript = null;
-      
-      // Try browser-side extraction first
-      try {
-        toast.loading('Extracting captions from browser...');
-        transcript = await extractYouTubeCaptions(videoId);
-        console.log('Browser extraction successful');
-      } catch (browserError) {
-        console.log('Browser extraction failed, letting backend handle it');
-      }
-      
-      // Send to backend
+
+      // Use direct AI generation path (no transcript required)
       toast.loading('Generating flashcards...');
       const response = await fetch(`${AI_SERVICE_URL}/api/ai/flashcards`, {
         method: 'POST',
@@ -188,10 +179,10 @@ const CourseView = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          transcript: transcript,
           videoId: videoId,
           title: course.videos[currentVideo].title,
-          numCards: 10
+          numCards: 10,
+          useRag: false
         }),
       });
 

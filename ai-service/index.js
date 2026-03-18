@@ -63,7 +63,14 @@ const PORT = process.env.PORT || 5001;
 
 async function start() {
   try {
-    await connectDatabase();
+    const ragEnabled = String(process.env.RAG_ENABLED || 'true').toLowerCase() !== 'false';
+
+    if (ragEnabled) {
+      await connectDatabase();
+    } else {
+      console.warn('⚠️  RAG is disabled; skipping MongoDB connection at startup');
+    }
+
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🤖 AI Service running on port ${PORT}`);
       console.log('🧠 RAG endpoints available at /api/rag/*');
