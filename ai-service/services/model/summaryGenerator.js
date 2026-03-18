@@ -1,16 +1,20 @@
 const { chatWithFallback } = require('../modelClient');
 
 /**
- * Generate summary using the model gateway based on video title
+ * Generate summary using the model gateway based on video title or transcript
  * @param {string} videoId - The YouTube video ID
  * @param {string} title - The video title
  * @param {string} format - Summary format (brief, detailed, bullet)
+ * @param {string} [transcript] - Optional video transcript for better context
  * @returns {Object} Summary and key points
  */
-async function generateSummary(videoId, title, format = 'detailed') {
+async function generateSummary(videoId, title, format = 'detailed', transcript = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   console.log('📝 Generating summary for video:', videoUrl);
   console.log('📝 Title:', title);
+  if (transcript) {
+    console.log('📄 Using transcript content (length:', transcript.length, 'chars)');
+  }
   
   let formatInstructions = '';
   if (format === 'brief') {
@@ -21,15 +25,26 @@ async function generateSummary(videoId, title, format = 'detailed') {
     formatInstructions = 'Create a detailed summary in 5-7 paragraphs covering the main topics.';
   }
   
-  const prompt = `You are an expert educational content summarizer. Based on the YouTube video title and topic, ${formatInstructions}
+  let contentSource = '';
+  if (transcript && transcript.trim().length > 100) {
+    // Use the actual transcript content
+    contentSource = `Video Transcript (first 3000 chars):\n${transcript.substring(0, 3000)}\n\n`;
+  } else {
+    // Fallback to title-based generation
+    contentSource = `Video Title: "${title}"\n`;
+  }
+  
+  const prompt = `You are an expert educational content summarizer. Based on the video content and topic, ${formatInstructions}
 
-Video Title: "${title}"
+${contentSource}
 Video URL: ${videoUrl}
 
-Create a comprehensive educational summary. Return ONLY valid JSON with NO markdown, NO code blocks.
+Create a comprehensive educational summary of what was taught. Focus on the actual content concepts, not the course structure.
+
+Return ONLY valid JSON with NO markdown, NO code blocks.
 
 JSON structure (keep responses concise to avoid truncation):
-{"summary":"2-3 sentence overview","mainConcepts":["concept1","concept2","concept3"],"keyPoints":["point1","point2","point3"],"keywords":["word1","word2","word3"],"practicalApplications":["app1","app2"],"nextSteps":["step1","step2"],"difficulty":"beginner"}
+{"summary":"2-3 sentence overview of key learnings","mainConcepts":["concept1","concept2","concept3"],"keyPoints":["point1","point2","point3"],"keywords":["word1","word2","word3"],"practicalApplications":["app1","app2"],"nextSteps":["step1","step2"],"difficulty":"beginner"}
 
 Where difficulty is: beginner, intermediate, or advanced`;
 

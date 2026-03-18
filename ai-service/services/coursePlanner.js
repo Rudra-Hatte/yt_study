@@ -417,7 +417,31 @@ async function getCandidateVideosFromTopics(topic, difficulty, learningTopics, l
   return deduped.slice(0, limit);
 }
 
-function formatFinalVideos(ordered) {
+// Map video concepts to closest learning topic
+function findBestMatchingTopic(videoTitle, concepts, learningTopics) {
+  if (!learningTopics || learningTopics.length === 0) return null;
+  
+  const videoTokens = toTokens(videoTitle);
+  let bestTopic = null;
+  let bestScore = 0;
+
+  for (const topic of learningTopics) {
+    const topicTokens = toTokens(topic);
+    const titleMatch = jaccard(videoTokens, topicTokens);
+    const conceptMatch = concepts.some(c => toTokens(c).some(t => topicTokens.includes(t))) ? 0.5 : 0;
+    const score = titleMatch * 0.7 + conceptMatch * 0.3;
+    
+    if (score > bestScore) {
+      bestScore = score;
+      bestTopic = topic;
+    }
+  }
+
+  // If no good match found, assign first topic (fallback)
+  return bestTopic || (learningTopics.length > 0 ? learningTopics[0] : null);
+}
+
+function formatFinalVideos(ordered, learningTopics = []) {
   return ordered.map((v, idx) => ({
     id: String(idx + 1),
     order: idx + 1,
@@ -430,6 +454,7 @@ function formatFinalVideos(ordered) {
     thumbnailUrl: v.thumbnailUrl,
     difficulty: v.estimatedLevel,
     concepts: v.matchedConcepts,
+    coversTopic: findBestMatchingTopic(v.title, v.matchedConcepts, learningTopics),
     rationale: `Selected for relevance, level match, and concept progression. Covers: ${v.matchedConcepts.slice(0, 3).join(', ') || 'core topic concepts'}`,
     score: Number(v.finalScore.toFixed(4))
   }));
@@ -468,7 +493,7 @@ async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration 
   }
 
   const ordered = orderByPrerequisites(selected, profile);
-  const videos = formatFinalVideos(ordered);
+  const videos = formatFinalVideos(ordered, learningTopics);
   const learningPath = buildModules(videos);
 
   const totalMinutes = videos.reduce((sum, v) => sum + (v.estimatedMinutes || 0), 0);

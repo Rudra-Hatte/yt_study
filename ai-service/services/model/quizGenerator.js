@@ -7,20 +7,33 @@ require('dotenv').config();
  * @param {string} title - The video title
  * @param {number} numQuestions - Number of questions to generate (default: 5)
  * @param {string} difficulty - Quiz difficulty level (easy, medium, hard)
+ * @param {string} [transcript] - Optional video transcript for better context
  * @returns {Array} Array of quiz questions with options and correct answers
  */
-async function generateQuiz(videoId, title, numQuestions = 5, difficulty = 'medium') {
+async function generateQuiz(videoId, title, numQuestions = 5, difficulty = 'medium', transcript = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   console.log('🎬 Generating quiz for video:', videoUrl);
   console.log('📝 Title:', title);
+  if (transcript) {
+    console.log('📄 Using transcript content (length:', transcript.length, 'chars)');
+  }
   
-  const prompt = `You are a quiz generator. Based on the YouTube video title and topic, create ${numQuestions} multiple-choice quiz questions at ${difficulty} difficulty level.
+  let contentSource = '';
+  if (transcript && transcript.trim().length > 100) {
+    // Use the actual transcript content
+    contentSource = `Video Transcript (first 3000 chars):\n${transcript.substring(0, 3000)}\n\n`;
+  } else {
+    // Fallback to title-based generation
+    contentSource = `Video Title: "${title}"\n`;
+  }
+  
+  const prompt = `You are a quiz generator. Based on the video content and topic, create ${numQuestions} multiple-choice quiz questions at ${difficulty} difficulty level.
 
-Video Title: "${title}"
+${contentSource}
 Video URL: ${videoUrl}
 
-Create educational questions that would test understanding of a video about this topic. Make the questions relevant to what someone would learn from watching a video with this title.
-Also that questions should be techincal as well more complex and related to video not just therotical questions 
+Create educational questions that test understanding of the actual video content/topic. Make questions technical, complex, and relevant to what someone would learn from this video.
+
 IMPORTANT: Return ONLY valid JSON with NO markdown formatting, NO code blocks, NO extra text. Just the raw JSON object.
 
 The JSON must have this exact structure:

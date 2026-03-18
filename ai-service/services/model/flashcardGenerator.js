@@ -1,29 +1,42 @@
 const { chatWithFallback } = require('../modelClient');
 
 /**
- * Generate flashcards using the model gateway based on video title
+ * Generate flashcards using the model gateway based on video title or transcript
  * @param {string} videoId - The YouTube video ID
  * @param {string} title - The video title
  * @param {number} numCards - Number of flashcards to generate (default: 10)
+ * @param {string} [transcript] - Optional video transcript for better context
  * @returns {Array} Array of flashcards with front and back content
  */
-async function generateFlashcards(videoId, title, numCards = 10) {
+async function generateFlashcards(videoId, title, numCards = 10, transcript = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   console.log('📚 Generating flashcards for video:', videoUrl);
   console.log('📝 Title:', title);
+  if (transcript) {
+    console.log('📄 Using transcript content (length:', transcript.length, 'chars)');
+  }
   
-  const prompt = `You are an expert at creating educational flashcards. Based on the YouTube video title and topic, create ${numCards} effective flashcards that highlight key concepts, definitions, and principles.
+  let contentSource = '';
+  if (transcript && transcript.trim().length > 100) {
+    // Use the actual transcript content
+    contentSource = `Video Transcript (first 3000 chars):\n${transcript.substring(0, 3000)}\n\n`;
+  } else {
+    // Fallback to title-based generation
+    contentSource = `Video Title: "${title}"\n`;
+  }
+  
+  const prompt = `You are an expert at creating educational flashcards. Based on the video content and topic, create ${numCards} effective flashcards that highlight key concepts, definitions, and principles.
 
-Video Title: "${title}"
+${contentSource}
 Video URL: ${videoUrl}
 
-Create educational flashcards that would help someone learn from a video about this topic. Make the flashcards relevant to what someone would learn from watching a video with this title.
+Create educational flashcards that test understanding of the actual video content. Make the flashcards technical, practical, and relevant to what someone would learn from this video. Focus on real concepts, not the course/title structure.
 
 For each flashcard:
-1. Front side should contain a clear question, term, or concept
-2. Back side should contain a concise but comprehensive answer or explanation
-3. Focus on the most important concepts related to this topic
-4. Ensure the flashcards cover different aspects of the content
+1. Front side should contain a clear question about a concept (e.g., "What is X?", "When should you use Y?")
+2. Back side should contain a concise but comprehensive answer with practical examples
+3. Focus on the most important concepts related to the topic
+4. Cover different aspects of the content
 5. Make flashcards technical and practical, not just theoretical
 
 IMPORTANT: Return ONLY valid JSON with NO markdown formatting, NO code blocks, NO extra text. Just the raw JSON object.

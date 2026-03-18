@@ -230,6 +230,11 @@ const CourseView = () => {
                 />
               </div>
               <div className="p-4">
+                {course.videos[currentVideo].coversTopic && (
+                  <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wider mb-2">
+                    📚 Topic: {course.videos[currentVideo].coversTopic}
+                  </p>
+                )}
                 <h1 className="text-2xl font-bold text-gray-900">
                   {course.videos[currentVideo].title}
                 </h1>
@@ -306,6 +311,9 @@ const CourseView = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
+                      {video.coversTopic && (
+                        <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">{video.coversTopic}</p>
+                      )}
                       <h3 className="font-medium text-gray-900 truncate">{video.title}</h3>
                       <p className="text-sm text-gray-500">{video.duration}</p>
                     </div>

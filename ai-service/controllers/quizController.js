@@ -2,6 +2,7 @@ const { generateQuiz } = require('../services/model/quizGenerator');
 const ragService = require('../services/rag/ragService');
 const { buildFallbackQuiz } = require('../services/model/localFallbackGenerator');
 const { generateQuizFromLink } = require('../services/model/linkOnlyGenerator');
+const { getVideoTranscript } = require('../utils/youtube');
 
 // Generate quiz questions from a video
 exports.createQuiz = async (req, res, next) => {
@@ -15,6 +16,7 @@ exports.createQuiz = async (req, res, next) => {
     }
     
     let quiz;
+    let transcript = null;
     const ragEnabled = String(process.env.RAG_ENABLED || 'true').toLowerCase() !== 'false';
 
     if (useRag && ragEnabled) {
@@ -31,16 +33,31 @@ exports.createQuiz = async (req, res, next) => {
 
         quiz = { ...ragResponse.data, rag: ragResponse.rag };
       } catch (ragError) {
-        console.warn('⚠️ RAG quiz path failed, using standard generation:', ragError.message);
+        console.warn('⚠️ RAG quiz path failed, trying transcript extraction:', ragError.message);
       }
     }
 
     if (!quiz) {
-      // Fallback: existing behavior
+      // Try to extract transcript silently as fallback content source
+      if (!transcript) {
+        try {
+          transcript = await getVideoTranscript(videoId);
+          if (transcript && transcript.trim().length > 100) {
+            console.log('✅ Transcript extracted, will use for generation');
+          } else {
+            transcript = null;
+          }
+        } catch (transcriptError) {
+          console.log('ℹ️ Transcript extraction failed, will use title-only mode:', transcriptError.message);
+          transcript = null;
+        }
+      }
+
+      // Fallback: try standard generation with or without transcript
       console.log('🤖 Generating quiz with standard fallback path...');
       try {
-        quiz = await generateQuiz(videoId, title || 'YouTube Video', numQuestions, difficulty);
-        quiz.rag = { used: false, fallback: true };
+        quiz = await generateQuiz(videoId, title || 'YouTube Video', numQuestions, difficulty, transcript);
+        quiz.rag = { used: false, fallback: true, hasTranscript: !!transcript };
       } catch (modelError) {
         console.warn('⚠️ Standard quiz generation failed, trying link-only fallback:', modelError.message);
         try {
@@ -49,6 +66,7 @@ exports.createQuiz = async (req, res, next) => {
         } catch (linkError) {
           console.warn('⚠️ Link-only quiz generation failed, using local fallback:', linkError.message);
           quiz = buildFallbackQuiz(videoId, title || 'YouTube Video', numQuestions, difficulty);
+          quiz.rag = { used: false, fallback: true, mode: 'local' };
         }
       }
     }

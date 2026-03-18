@@ -2,6 +2,7 @@ const { generateSummary } = require('../services/model/summaryGenerator');
 const ragService = require('../services/rag/ragService');
 const { buildFallbackSummary } = require('../services/model/localFallbackGenerator');
 const { generateSummaryFromLink } = require('../services/model/linkOnlyGenerator');
+const { getVideoTranscript } = require('../utils/youtube');
 
 // Generate summary from a video
 exports.createSummary = async (req, res, next) => {
@@ -17,6 +18,7 @@ exports.createSummary = async (req, res, next) => {
     const safeTitle = title || `Video ${videoId}`;
     
     let summary;
+    let transcript = null;
     const ragEnabled = String(process.env.RAG_ENABLED || 'true').toLowerCase() !== 'false';
 
     if (useRag && ragEnabled) {
@@ -33,16 +35,31 @@ exports.createSummary = async (req, res, next) => {
 
         summary = { ...ragResponse.data, rag: ragResponse.rag };
       } catch (ragError) {
-        console.warn('⚠️ RAG summary path failed, using standard generation:', ragError.message);
+        console.warn('⚠️ RAG summary path failed, trying transcript extraction:', ragError.message);
       }
     }
 
     if (!summary) {
-      // Fallback: existing behavior
+      // Try to extract transcript silently as fallback content source
+      if (!transcript) {
+        try {
+          transcript = await getVideoTranscript(videoId);
+          if (transcript && transcript.trim().length > 100) {
+            console.log('✅ Transcript extracted, will use for generation');
+          } else {
+            transcript = null;
+          }
+        } catch (transcriptError) {
+          console.log('ℹ️ Transcript extraction failed, will use title-only mode:', transcriptError.message);
+          transcript = null;
+        }
+      }
+
+      // Fallback: try standard generation with or without transcript
       console.log('🤖 Generating summary with standard fallback path...');
       try {
-        summary = await generateSummary(videoId, safeTitle, format);
-        summary.rag = { used: false, fallback: true };
+        summary = await generateSummary(videoId, safeTitle, format, transcript);
+        summary.rag = { used: false, fallback: true, hasTranscript: !!transcript };
       } catch (modelError) {
         console.warn('⚠️ Standard summary generation failed, trying link-only fallback:', modelError.message);
         try {
@@ -51,6 +68,7 @@ exports.createSummary = async (req, res, next) => {
         } catch (linkError) {
           console.warn('⚠️ Link-only summary generation failed, using local fallback:', linkError.message);
           summary = buildFallbackSummary(videoId, safeTitle, format);
+          summary.rag = { used: false, fallback: true, mode: 'local' };
         }
       }
     }
