@@ -87,6 +87,8 @@ ENV/
 /models/
 /ollama-models/
 ai-service/models/
+!ai-service/models/
+!ai-service/models/KnowledgeChunk.js
 
 # AI training data
 training-data/
