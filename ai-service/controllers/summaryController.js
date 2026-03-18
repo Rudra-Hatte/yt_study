@@ -1,5 +1,7 @@
 const { generateSummary } = require('../services/model/summaryGenerator');
 const ragService = require('../services/rag/ragService');
+const { buildFallbackSummary } = require('../services/model/localFallbackGenerator');
+const { generateSummaryFromLink } = require('../services/model/linkOnlyGenerator');
 
 // Generate summary from a video
 exports.createSummary = async (req, res, next) => {
@@ -12,18 +14,16 @@ exports.createSummary = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Video ID is required' });
     }
     
-    if (!title) {
-      return res.status(400).json({ success: false, error: 'Video title is required' });
-    }
+    const safeTitle = title || `Video ${videoId}`;
     
     let summary;
     const ragEnabled = String(process.env.RAG_ENABLED || 'true').toLowerCase() !== 'false';
 
     if (useRag && ragEnabled) {
       try {
-        await ragService.ensureIndexed(videoId, title);
+        await ragService.ensureIndexed(videoId, safeTitle);
         const ragResponse = await ragService.generateWithRAG({
-          query: `Generate a ${format} learning summary for ${title}`,
+          query: `Generate a ${format} learning summary for ${safeTitle}`,
           task: `Generate a ${format} summary with key points, main concepts, keywords, practical applications, next steps, and difficulty level.`,
           schemaHint: '{"summary":"...","mainConcepts":["..."],"keyPoints":["..."],"keywords":["..."],"practicalApplications":["..."],"nextSteps":["..."],"difficulty":"beginner|intermediate|advanced"}',
           temperature: 0.6,
@@ -40,8 +40,19 @@ exports.createSummary = async (req, res, next) => {
     if (!summary) {
       // Fallback: existing behavior
       console.log('🤖 Generating summary with standard fallback path...');
-      summary = await generateSummary(videoId, title, format);
-      summary.rag = { used: false, fallback: true };
+      try {
+        summary = await generateSummary(videoId, safeTitle, format);
+        summary.rag = { used: false, fallback: true };
+      } catch (modelError) {
+        console.warn('⚠️ Standard summary generation failed, trying link-only fallback:', modelError.message);
+        try {
+          summary = await generateSummaryFromLink(videoId, safeTitle, format);
+          summary.rag = { used: false, fallback: true, mode: 'link-only-model' };
+        } catch (linkError) {
+          console.warn('⚠️ Link-only summary generation failed, using local fallback:', linkError.message);
+          summary = buildFallbackSummary(videoId, safeTitle, format);
+        }
+      }
     }
     
     console.log('✅ Summary generated successfully');

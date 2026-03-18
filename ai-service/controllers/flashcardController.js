@@ -1,5 +1,7 @@
 const { generateFlashcards } = require('../services/model/flashcardGenerator');
 const ragService = require('../services/rag/ragService');
+const { buildFallbackFlashcards } = require('../services/model/localFallbackGenerator');
+const { generateFlashcardsFromLink } = require('../services/model/linkOnlyGenerator');
 
 // Generate flashcards from a video
 exports.createFlashcards = async (req, res, next) => {
@@ -12,18 +14,16 @@ exports.createFlashcards = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Video ID is required' });
     }
     
-    if (!title) {
-      return res.status(400).json({ success: false, error: 'Video title is required' });
-    }
+    const safeTitle = title || `Video ${videoId}`;
     
     let flashcards;
     const ragEnabled = String(process.env.RAG_ENABLED || 'true').toLowerCase() !== 'false';
 
     if (useRag && ragEnabled) {
       try {
-        await ragService.ensureIndexed(videoId, title);
+        await ragService.ensureIndexed(videoId, safeTitle);
         const ragResponse = await ragService.generateWithRAG({
-          query: `Generate ${numCards} study flashcards for ${title}`,
+          query: `Generate ${numCards} study flashcards for ${safeTitle}`,
           task: `Generate ${numCards} flashcards with front, back, and tags. Keep cards concrete and practical.`,
           schemaHint: '{"flashcards":[{"front":"...","back":"...","tags":["tag1","tag2"]}]}',
           temperature: 0.65,
@@ -40,8 +40,19 @@ exports.createFlashcards = async (req, res, next) => {
     if (!flashcards) {
       // Fallback: existing behavior
       console.log('🤖 Generating flashcards with standard fallback path...');
-      flashcards = await generateFlashcards(videoId, title, numCards);
-      flashcards.rag = { used: false, fallback: true };
+      try {
+        flashcards = await generateFlashcards(videoId, safeTitle, numCards);
+        flashcards.rag = { used: false, fallback: true };
+      } catch (modelError) {
+        console.warn('⚠️ Standard flashcard generation failed, trying link-only fallback:', modelError.message);
+        try {
+          flashcards = await generateFlashcardsFromLink(videoId, safeTitle, numCards);
+          flashcards.rag = { used: false, fallback: true, mode: 'link-only-model' };
+        } catch (linkError) {
+          console.warn('⚠️ Link-only flashcard generation failed, using local fallback:', linkError.message);
+          flashcards = buildFallbackFlashcards(videoId, safeTitle, numCards);
+        }
+      }
     }
     
     console.log('✅ Flashcards generated successfully');

@@ -1,5 +1,7 @@
 const { generateQuiz } = require('../services/model/quizGenerator');
 const ragService = require('../services/rag/ragService');
+const { buildFallbackQuiz } = require('../services/model/localFallbackGenerator');
+const { generateQuizFromLink } = require('../services/model/linkOnlyGenerator');
 
 // Generate quiz questions from a video
 exports.createQuiz = async (req, res, next) => {
@@ -36,8 +38,19 @@ exports.createQuiz = async (req, res, next) => {
     if (!quiz) {
       // Fallback: existing behavior
       console.log('🤖 Generating quiz with standard fallback path...');
-      quiz = await generateQuiz(videoId, title || 'YouTube Video', numQuestions, difficulty);
-      quiz.rag = { used: false, fallback: true };
+      try {
+        quiz = await generateQuiz(videoId, title || 'YouTube Video', numQuestions, difficulty);
+        quiz.rag = { used: false, fallback: true };
+      } catch (modelError) {
+        console.warn('⚠️ Standard quiz generation failed, trying link-only fallback:', modelError.message);
+        try {
+          quiz = await generateQuizFromLink(videoId, title || 'YouTube Video', numQuestions, difficulty);
+          quiz.rag = { used: false, fallback: true, mode: 'link-only-model' };
+        } catch (linkError) {
+          console.warn('⚠️ Link-only quiz generation failed, using local fallback:', linkError.message);
+          quiz = buildFallbackQuiz(videoId, title || 'YouTube Video', numQuestions, difficulty);
+        }
+      }
     }
     
     console.log('✅ Quiz generated successfully');
