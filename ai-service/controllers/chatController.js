@@ -1,16 +1,7 @@
-const Groq = require('groq-sdk');
+const { chatWithFallback } = require('../services/modelClient');
 require('dotenv').config();
 
-// Initialize Groq client
-const getGroqClient = () => {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    throw new Error('GROQ_API_KEY is not configured');
-  }
-  return new Groq({ apiKey });
-};
-
-// Chat with AI Study Buddy using Groq
+// Chat with AI Study Buddy through the model gateway
 exports.chatWithAI = async (req, res, next) => {
   try {
     const { message, context, courseId } = req.body;
@@ -20,8 +11,6 @@ exports.chatWithAI = async (req, res, next) => {
     if (!message) {
       return res.status(400).json({ success: false, error: 'Message is required' });
     }
-
-    const client = getGroqClient();
 
     // Create context-aware system prompt
     let systemPrompt = `You are an AI Study Buddy - a helpful, encouraging, and knowledgeable learning assistant. Your role is to help students learn effectively by:
@@ -47,26 +36,16 @@ Context: ${context || 'General study help'}`;
       systemPrompt += `\nCourse Context: Student is currently working on course ID ${courseId}`;
     }
 
-    console.log('🤖 Calling Groq AI (Llama 3.3) for chat...');
-    
-    const completion = await client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: message
-        }
-      ],
+    console.log('🤖 Calling model gateway for chat...');
+    const response = await chatWithFallback({
+      systemPrompt,
+      userPrompt: message,
       temperature: 0.7,
-      max_tokens: 1000,
+      maxTokens: 1000
     });
 
-    const aiResponse = completion.choices[0]?.message?.content || '';
-    console.log('✅ Groq chat response received successfully');
+    const aiResponse = response.text || '';
+    console.log('✅ Chat response received successfully');
 
     res.json({ 
       success: true, 
@@ -86,12 +65,11 @@ Context: ${context || 'General study help'}`;
       status: error.status
     });
     
-    // Check if it's a Groq API error
     let errorMessage = 'Failed to generate response';
     let statusCode = 500;
-    
+
     if (error.message?.includes('API key')) {
-      errorMessage = 'API key configuration error. Please check your Groq API key.';
+      errorMessage = 'API key configuration error. Please check model API keys.';
       statusCode = 503;
     } else if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
       errorMessage = 'API rate limit exceeded. Please try again in a moment.';

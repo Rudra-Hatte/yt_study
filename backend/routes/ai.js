@@ -326,4 +326,50 @@ router.post('/chat', auth, async (req, res) => {
   }
 });
 
+// Index a specific video into RAG knowledge base
+router.post('/rag/index/:videoId', auth, async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    const { title } = req.body;
+
+    const video = await Video.findById(videoId).select('youtubeId title');
+    if (!video) {
+      return res.status(404).json({ success: false, message: 'Video not found' });
+    }
+
+    const result = await aiService.ragIndexVideo(video.youtubeId, title || video.title);
+    return res.json(result);
+  } catch (err) {
+    console.error('RAG index proxy error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to index video in RAG' });
+  }
+});
+
+// Search RAG context
+router.post('/rag/search', auth, async (req, res) => {
+  try {
+    const { query, limit = 6, youtubeVideoId = null } = req.body;
+    if (!query) {
+      return res.status(400).json({ success: false, message: 'query is required' });
+    }
+
+    const result = await aiService.ragSearch(query, limit, youtubeVideoId);
+    return res.json(result);
+  } catch (err) {
+    console.error('RAG search proxy error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to search RAG' });
+  }
+});
+
+// RAG stats
+router.get('/rag/stats', auth, async (req, res) => {
+  try {
+    const result = await aiService.ragStats();
+    return res.json(result);
+  } catch (err) {
+    console.error('RAG stats proxy error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to fetch RAG stats' });
+  }
+});
+
 module.exports = router;

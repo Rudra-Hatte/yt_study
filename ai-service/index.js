@@ -2,7 +2,9 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const aiRoutes = require('./routes');
+const ragRoutes = require('./routes/rag');
 const apiKeyRotator = require('./config/apiKeyRotator');
+const { connectDatabase } = require('./config/database');
 
 const app = express();
 
@@ -38,12 +40,14 @@ app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
     service: 'yt-study-ai-service',
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    ragEnabled: String(process.env.RAG_ENABLED || 'true').toLowerCase() !== 'false'
   });
 });
 
 // Routes
 app.use('/api/ai', aiRoutes);
+app.use('/api/rag', ragRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -56,6 +60,18 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🤖 AI Service running on port ${PORT}`);
-});
+
+async function start() {
+  try {
+    await connectDatabase();
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🤖 AI Service running on port ${PORT}`);
+      console.log('🧠 RAG endpoints available at /api/rag/*');
+    });
+  } catch (error) {
+    console.error('❌ Failed to start AI service:', error.message);
+    process.exit(1);
+  }
+}
+
+start();

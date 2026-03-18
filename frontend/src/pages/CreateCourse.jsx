@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext_simple';
+import { useCourse } from '../contexts/CourseContext';
 import { generateThumbnail } from '../utils/thumbnailGenerator';
 import AutomatedCourseGenerator from '../components/AutomatedCourseGenerator';
 import toast from 'react-hot-toast';
@@ -21,6 +22,7 @@ const SUGGESTED_TOPICS = [
 const CreateCourse = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addCourse } = useCourse();
   const [showMethodModal, setShowMethodModal] = useState(true);
   const [creationMethod, setCreationMethod] = useState(null); // 'manual' or 'ai'
   const [formData, setFormData] = useState({
@@ -99,21 +101,31 @@ const CreateCourse = () => {
     }
 
     try {
+      const videos = formData.videos.map((video, index) => ({
+        id: `v${index + 1}`,
+        title: video.title,
+        youtubeId: extractVideoId(video.url),
+        duration: '30:00',
+        description: '',
+        completed: false,
+        order: index
+      }));
+
       const courseData = {
-        ...formData,
+        title: formData.title,
+        description: formData.description || `Learn ${formData.topic} with curated lessons.`,
+        category: 'Technology',
+        topic: formData.topic,
         createdBy: user.id,
         thumbnail: generateThumbnail(formData.title, formData.topic),
-        videos: formData.videos.map(video => ({
-          ...video,
-          youtubeId: extractVideoId(video.url)
-        }))
+        difficulty: 'intermediate',
+        duration: `${videos.length * 30} min`,
+        videos,
+        isGenerated: false
       };
 
-      // TODO: Add API call to save course
-      console.log('Course Data:', courseData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await addCourse(courseData);
+      toast.success('Course created successfully!');
       
       navigate('/courses');
     } catch (error) {

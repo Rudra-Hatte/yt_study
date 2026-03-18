@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 
 const CourseView = () => {
   const { courseId } = useParams();
-  const { courses } = useCourse();
+  const { courses, updateVideoProgress } = useCourse();
   const [currentVideo, setCurrentVideo] = useState(0);
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -80,11 +80,26 @@ const CourseView = () => {
     );
   }
 
-  const handleVideoComplete = (videoIndex) => {
+  const handleVideoComplete = async (videoIndex) => {
+    const selectedVideo = course?.videos?.[videoIndex];
+    if (!selectedVideo) return;
+
+    const backendVideoId = selectedVideo.dbVideoId || selectedVideo._id;
+    if (!backendVideoId) {
+      toast.error('This lesson is not linked for progress tracking yet.');
+      return;
+    }
+
+    await updateVideoProgress(course._id || course.id, backendVideoId, true, 1, 1);
+
     const updatedCourse = { ...course };
-    updatedCourse.videos[videoIndex].completed = true;
+    updatedCourse.videos = updatedCourse.videos.map((video, index) => (
+      index === videoIndex ? { ...video, completed: true } : video
+    ));
     updatedCourse.completedLessons = updatedCourse.videos.filter(v => v.completed).length;
+    updatedCourse.totalLessons = updatedCourse.videos.length;
     setCourse(updatedCourse);
+    toast.success('Lesson marked as completed.');
   };
 
   const handleGenerateQuiz = async () => {
@@ -160,9 +175,9 @@ const CourseView = () => {
       try {
         toast.loading('Extracting captions from browser...');
         transcript = await extractYouTubeCaptions(videoId);
-        console.log('G�� Browser extraction successful');
+        console.log('Browser extraction successful');
       } catch (browserError) {
-        console.log('G��n+� Browser extraction failed, letting backend handle it');
+        console.log('Browser extraction failed, letting backend handle it');
       }
       
       // Send to backend
@@ -227,7 +242,15 @@ const CourseView = () => {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {course.videos[currentVideo].title}
                 </h1>
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleVideoComplete(currentVideo)}
+                    className="py-3 px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center"
+                  >
+                    Mark Completed
+                  </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -286,7 +309,7 @@ const CourseView = () => {
                   >
                     <div className="mr-4 flex-shrink-0">
                       {video.completed ? (
-                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-green-100 text-green-600">G��</span>
+                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-green-100 text-green-600">OK</span>
                       ) : (
                         <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-600">{index + 1}</span>
                       )}

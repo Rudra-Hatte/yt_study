@@ -53,6 +53,8 @@ exports.createCourse = async (req, res) => {
   const { title, description, category, tags, thumbnail, isPublic, difficulty, videos, duration, isGenerated } = req.body;
   
   try {
+    const normalizedVideos = Array.isArray(videos) ? videos : [];
+
     const newCourse = new Course({
       title,
       description,
@@ -63,20 +65,65 @@ exports.createCourse = async (req, res) => {
       thumbnail,
       isPublic: isPublic !== undefined ? isPublic : true,
       difficulty: difficulty || 'intermediate',
-      videos: videos || [],
+      videos: normalizedVideos,
       duration: duration || '',
-      totalLessons: videos ? videos.length : 0,
+      totalLessons: normalizedVideos.length,
       isGenerated: isGenerated || false
     });
     
     const course = await newCourse.save();
+
+    // Create progress-trackable Video docs and store their IDs in the course video list.
+    if (normalizedVideos.length > 0) {
+      const enrichedVideos = [];
+
+      for (let index = 0; index < normalizedVideos.length; index += 1) {
+        const videoItem = normalizedVideos[index] || {};
+
+        const durationStr = String(videoItem.duration || '0:00');
+        const durationParts = durationStr.split(':').map((part) => Number(part) || 0);
+        const seconds = durationParts.length === 3
+          ? (durationParts[0] * 3600) + (durationParts[1] * 60) + durationParts[2]
+          : (durationParts[0] * 60) + (durationParts[1] || 0);
+
+        const sourceYoutubeId = videoItem.youtubeId || `${course._id}-${index + 1}`;
+        const trackingYoutubeId = `${sourceYoutubeId}::${course._id}:${index + 1}`;
+
+        const newVideo = new Video({
+          title: videoItem.title || `Lesson ${index + 1}`,
+          description: videoItem.description || '',
+          youtubeId: trackingYoutubeId,
+          courseId: course._id,
+          duration: Number.isFinite(seconds) ? seconds : 0,
+          thumbnail: videoItem.thumbnailUrl || videoItem.thumbnail || '',
+          order: videoItem.order ?? index,
+          difficulty: difficulty || 'intermediate'
+        });
+
+        const savedVideo = await newVideo.save();
+
+        enrichedVideos.push({
+          ...videoItem,
+          id: videoItem.id || `v${index + 1}`,
+          order: videoItem.order ?? index,
+          dbVideoId: savedVideo._id
+        });
+      }
+
+      course.videos = enrichedVideos;
+      course.totalLessons = enrichedVideos.length;
+      await course.save();
+    }
+
     console.log(`✅ Course created: ${course.title} (ID: ${course._id})`);
     
     // Add course to user's created courses
-    await User.findByIdAndUpdate(
-      req.user.id,
-      { $push: { createdCourses: course._id } }
-    );
+    await User.findByIdAndUpdate(req.user.id, {
+      $addToSet: {
+        createdCourses: course._id,
+        enrolledCourses: course._id
+      }
+    });
     
     res.json(course);
   } catch (err) {

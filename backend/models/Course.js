@@ -94,6 +94,10 @@ const courseSchema = new mongoose.Schema({
   // Simple videos array for generated courses
   videos: [{
     id: String,
+    dbVideoId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Video'
+    },
     title: String,
     youtubeId: String,
     duration: String,

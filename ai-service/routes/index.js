@@ -6,6 +6,7 @@ const summaryController = require('../controllers/summaryController');
 const curatorController = require('../controllers/curatorController');
 const courseStructureController = require('../controllers/courseStructureController');
 const chatController = require('../controllers/chatController');
+const ragService = require('../services/rag/ragService');
 
 // Quiz routes
 router.post('/quiz', quizController.createQuiz);
@@ -30,8 +31,15 @@ router.post('/analyze-concepts', courseStructureController.analyzeContentRelatio
 router.post('/chat', chatController.chatWithAI);
 
 // Basic route for testing
-router.get('/status', (req, res) => {
-  res.json({ status: 'AI service operational', version: '1.0.0' });
+router.get('/status', async (req, res) => {
+  let ragStats = null;
+  try {
+    ragStats = await ragService.getStats();
+  } catch (error) {
+    ragStats = { available: false, reason: error.message };
+  }
+
+  res.json({ status: 'AI service operational', version: '1.0.0', rag: ragStats });
 });
 
 module.exports = router;

@@ -114,6 +114,24 @@ const Dashboard = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const refreshDashboard = () => {
+      fetchDashboardData().catch((err) => {
+        console.error('Realtime dashboard refresh failed:', err);
+      });
+    };
+
+    window.addEventListener('course:created', refreshDashboard);
+    window.addEventListener('progress:updated', refreshDashboard);
+
+    return () => {
+      window.removeEventListener('course:created', refreshDashboard);
+      window.removeEventListener('progress:updated', refreshDashboard);
+    };
+  }, [user]);
+
   const fetchDashboardData = async () => {
     if (!user?.token) {
       console.log('No user token available');

@@ -24,13 +24,40 @@ router.get('/overview', auth, async (req, res) => {
     const user = await User.findById(userId).populate('enrolledCourses');
     
     // Get all progress records for the user
-    const progressRecords = await Progress.find({ userId });
+    const progressRecords = await Progress.find({ userId }).populate('videoId', 'courseId');
     
     // Calculate statistics
     const totalCourses = user.enrolledCourses?.length || 0;
-    const completedCourses = progressRecords.filter(p => p.completed).length;
-    const inProgressCourses = progressRecords.filter(p => p.watchTime > 0 && !p.completed).length;
-    const notStartedCourses = totalCourses - completedCourses - inProgressCourses;
+    const courseProgressMap = new Map();
+
+    progressRecords.forEach((record) => {
+      const courseId = record.videoId?.courseId ? String(record.videoId.courseId) : null;
+      if (!courseId) {
+        return;
+      }
+
+      const current = courseProgressMap.get(courseId) || { hasWatch: false, allCompleted: true };
+      current.hasWatch = current.hasWatch || (record.watchTime > 0 || record.watchPercentage > 0);
+      current.allCompleted = current.allCompleted && !!record.completed;
+      courseProgressMap.set(courseId, current);
+    });
+
+    let completedCourses = 0;
+    let inProgressCourses = 0;
+
+    user.enrolledCourses.forEach((course) => {
+      const state = courseProgressMap.get(String(course._id));
+      if (!state) {
+        return;
+      }
+      if (state.allCompleted && state.hasWatch) {
+        completedCourses += 1;
+      } else if (state.hasWatch) {
+        inProgressCourses += 1;
+      }
+    });
+
+    const notStartedCourses = Math.max(0, totalCourses - completedCourses - inProgressCourses);
     
     // Calculate total study time in minutes
     const totalStudyTime = progressRecords.reduce((sum, record) => sum + (record.watchTime || 0), 0);

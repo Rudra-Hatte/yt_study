@@ -1,6 +1,7 @@
 const axios = require('axios');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5001/api/ai';
+const AI_RAG_SERVICE_URL = AI_SERVICE_URL.replace(/\/api\/ai\/?$/, '/api/rag');
 
 // Generate quiz from video
 const generateQuiz = async (videoId, title, numQuestions = 5, difficulty = 'medium') => {
@@ -107,6 +108,46 @@ const chatWithAI = async (chatData) => {
   }
 };
 
+// Index a video into RAG knowledge store
+const ragIndexVideo = async (videoId, title) => {
+  try {
+    const response = await axios.post(`${AI_RAG_SERVICE_URL}/index`, {
+      videoId,
+      title
+    });
+    return response.data;
+  } catch (error) {
+    console.error('AI RAG index error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to index video for RAG');
+  }
+};
+
+// Search RAG context
+const ragSearch = async (query, limit = 6, videoId = null) => {
+  try {
+    const response = await axios.post(`${AI_RAG_SERVICE_URL}/search`, {
+      query,
+      limit,
+      videoId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('AI RAG search error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to search RAG context');
+  }
+};
+
+// Get RAG stats
+const ragStats = async () => {
+  try {
+    const response = await axios.get(`${AI_RAG_SERVICE_URL}/stats`);
+    return response.data;
+  } catch (error) {
+    console.error('AI RAG stats error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to fetch RAG stats');
+  }
+};
+
 module.exports = {
   generateQuiz,
   generateFlashcards,
@@ -115,5 +156,8 @@ module.exports = {
   generateCourse,
   generateCourseAI,
   summarizeVideo,
-  chatWithAI
+  chatWithAI,
+  ragIndexVideo,
+  ragSearch,
+  ragStats
 };

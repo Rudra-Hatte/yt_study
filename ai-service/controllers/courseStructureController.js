@@ -1,5 +1,6 @@
-const { generateCourseStructure, analyzeConceptRelationships } = require('../services/gemini/courseStructurer');
-const { generateSummary } = require('../services/gemini/summaryGenerator');
+const { generateCourseStructure, analyzeConceptRelationships } = require('../services/model/courseStructurer');
+const { generateSummary } = require('../services/model/summaryGenerator');
+const { buildPersonalizedCourse } = require('../services/coursePlanner');
 const { getVideoTranscript } = require('../utils/youtube');
 const { preprocessTranscript } = require('../utils/contentPreprocessor');
 
@@ -17,8 +18,8 @@ exports.generateCourseAI = async (req, res, next) => {
       });
     }
 
-    // Generate AI-powered course structure
-    const aiCourseStructure = await generateAICourseStructure(topic, difficulty, duration);
+    // Generate algorithmic personalized course structure
+    const aiCourseStructure = await buildPersonalizedCourse(topic, difficulty, duration);
 
     res.json({
       success: true,
@@ -33,167 +34,6 @@ exports.generateCourseAI = async (req, res, next) => {
     });
   }
 };
-
-/**
- * Generate AI course structure based on topic, difficulty, and duration
- */
-async function generateAICourseStructure(topic, difficulty, duration) {
-  // Mock AI-generated course structure for now
-  const mockVideos = [
-    {
-      id: '1',
-      title: `${topic} - Introduction and Overview`,
-      youtubeId: 'dQw4w9WgXcQ', // Mock video ID
-      duration: '15:30',
-      description: `Introduction to ${topic} covering fundamental concepts and what you'll learn in this comprehensive course.`,
-      concepts: ['Introduction', 'Overview', 'Prerequisites', 'Learning Goals'],
-      order: 1
-    },
-    {
-      id: '2',
-      title: `${topic} - Core Concepts and Principles`,
-      youtubeId: 'dQw4w9WgXcQ',
-      duration: '25:45',
-      description: `Deep dive into the core concepts and fundamental principles of ${topic}.`,
-      concepts: ['Core Concepts', 'Fundamental Principles', 'Basic Theory'],
-      order: 2
-    },
-    {
-      id: '3',
-      title: `${topic} - Hands-on Practice`,
-      youtubeId: 'dQw4w9WgXcQ',
-      duration: '30:20',
-      description: `Practical hands-on exercises and examples to solidify your understanding of ${topic}.`,
-      concepts: ['Practical Application', 'Hands-on Practice', 'Examples'],
-      order: 3
-    },
-    {
-      id: '4',
-      title: `${topic} - Advanced Techniques`,
-      youtubeId: 'dQw4w9WgXcQ',
-      duration: '20:15',
-      description: `Advanced techniques and best practices for mastering ${topic}.`,
-      concepts: ['Advanced Techniques', 'Best Practices', 'Optimization'],
-      order: 4
-    },
-    {
-      id: '5',
-      title: `${topic} - Real-world Applications`,
-      youtubeId: 'dQw4w9WgXcQ',
-      duration: '22:30',
-      description: `Real-world applications and use cases of ${topic} in industry.`,
-      concepts: ['Real-world Applications', 'Industry Use Cases', 'Case Studies'],
-      order: 5
-    },
-    {
-      id: '6',
-      title: `${topic} - Final Project and Next Steps`,
-      youtubeId: 'dQw4w9WgXcQ',
-      duration: '18:40',
-      description: `Capstone project bringing together all concepts learned, plus recommendations for next steps.`,
-      concepts: ['Final Project', 'Integration', 'Next Steps', 'Career Path'],
-      order: 6
-    }
-  ];
-
-  // Filter videos based on duration
-  let selectedVideos = mockVideos;
-  if (duration === '2-3 hours') {
-    selectedVideos = mockVideos.slice(0, 3);
-  } else if (duration === '4-6 hours') {
-    selectedVideos = mockVideos.slice(0, 4);
-  } else if (duration === '8-12 hours') {
-    selectedVideos = mockVideos.slice(0, 5);
-  }
-
-  const courseStructure = {
-    title: `Complete ${topic} Course - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} Level`,
-    description: `A comprehensive ${difficulty}-level course on ${topic} designed to take you from beginner to proficient. This AI-curated course includes hands-on practice, real-world examples, and everything you need to master ${topic}.`,
-    topic,
-    difficulty,
-    duration,
-    totalLessons: selectedVideos.length,
-    estimatedHours: duration,
-    videos: selectedVideos,
-    learningPath: [
-      {
-        module: 1,
-        title: "Foundation",
-        lessons: selectedVideos.slice(0, 2),
-        description: "Build a solid foundation with core concepts"
-      },
-      {
-        module: 2,
-        title: "Application",
-        lessons: selectedVideos.slice(2, 4),
-        description: "Apply your knowledge with practical exercises"
-      },
-      {
-        module: 3,
-        title: "Mastery",
-        lessons: selectedVideos.slice(4),
-        description: "Master advanced concepts and real-world applications"
-      }
-    ].filter(module => module.lessons.length > 0),
-    roadmap: {
-      prerequisites: difficulty === 'beginner' ? 
-        ["Basic computer literacy", "Willingness to learn"] :
-        difficulty === 'intermediate' ? 
-        ["Basic understanding of programming", "Familiarity with development tools"] :
-        ["Strong programming background", "Experience with related technologies"],
-      outcomes: [
-        `Complete understanding of ${topic} fundamentals`,
-        `Ability to build projects using ${topic}`,
-        `Knowledge of best practices and advanced techniques`,
-        `Preparation for real-world applications`
-      ],
-      careerPaths: [
-        `${topic} Developer`,
-        `${topic} Specialist`,
-        `Senior Developer with ${topic} expertise`,
-        `Technical Lead in ${topic} projects`
-      ]
-    },
-    keywords: generateKeywords(topic),
-    metadata: {
-      generatedBy: 'AI',
-      generatedAt: new Date().toISOString(),
-      version: '1.0',
-      aiModel: 'YT-Study AI Course Generator'
-    }
-  };
-
-  return courseStructure;
-}
-
-/**
- * Generate relevant keywords for a topic
- */
-function generateKeywords(topic) {
-  const commonKeywords = ['programming', 'development', 'coding', 'software', 'tutorial', 'course', 'learning'];
-  const topicKeywords = topic.toLowerCase().split(' ');
-  
-  // Add some related keywords based on common topics
-  const topicRelatedKeywords = {
-    'react': ['jsx', 'components', 'hooks', 'state', 'props', 'virtual dom'],
-    'javascript': ['es6', 'functions', 'objects', 'dom', 'async', 'promises'],
-    'python': ['syntax', 'functions', 'classes', 'modules', 'libraries', 'data'],
-    'machine learning': ['algorithms', 'models', 'training', 'data science', 'ai', 'neural networks'],
-    'web development': ['html', 'css', 'javascript', 'responsive', 'frontend', 'backend']
-  };
-
-  let keywords = [...new Set([...commonKeywords, ...topicKeywords])];
-  
-  // Add topic-specific keywords
-  for (const [key, values] of Object.entries(topicRelatedKeywords)) {
-    if (topic.toLowerCase().includes(key)) {
-      keywords.push(...values);
-      break;
-    }
-  }
-
-  return keywords.slice(0, 15); // Limit to 15 keywords
-}
 
 /**
  * Generate a complete course structure from a topic and video URLs

@@ -1,9 +1,10 @@
-const { generateSummary } = require('../services/gemini/summaryGenerator');
+const { generateSummary } = require('../services/model/summaryGenerator');
+const ragService = require('../services/rag/ragService');
 
 // Generate summary from a video
 exports.createSummary = async (req, res, next) => {
   try {
-    const { videoId, format = 'detailed', title } = req.body;
+    const { videoId, format = 'detailed', title, useRag = true } = req.body;
     
     console.log('📄 Summary generation requested for video:', videoId);
     
@@ -15,9 +16,33 @@ exports.createSummary = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Video title is required' });
     }
     
-    // Generate summary using Groq AI (no transcript needed)
-    console.log('🤖 Generating summary with Groq AI...');
-    const summary = await generateSummary(videoId, title, format);
+    let summary;
+    const ragEnabled = String(process.env.RAG_ENABLED || 'true').toLowerCase() !== 'false';
+
+    if (useRag && ragEnabled) {
+      try {
+        await ragService.ensureIndexed(videoId, title);
+        const ragResponse = await ragService.generateWithRAG({
+          query: `Generate a ${format} learning summary for ${title}`,
+          task: `Generate a ${format} summary with key points, main concepts, keywords, practical applications, next steps, and difficulty level.`,
+          schemaHint: '{"summary":"...","mainConcepts":["..."],"keyPoints":["..."],"keywords":["..."],"practicalApplications":["..."],"nextSteps":["..."],"difficulty":"beginner|intermediate|advanced"}',
+          temperature: 0.6,
+          maxTokens: 2200,
+          videoId
+        });
+
+        summary = { ...ragResponse.data, rag: ragResponse.rag };
+      } catch (ragError) {
+        console.warn('⚠️ RAG summary path failed, using standard generation:', ragError.message);
+      }
+    }
+
+    if (!summary) {
+      // Fallback: existing behavior
+      console.log('🤖 Generating summary with standard fallback path...');
+      summary = await generateSummary(videoId, title, format);
+      summary.rag = { used: false, fallback: true };
+    }
     
     console.log('✅ Summary generated successfully');
     

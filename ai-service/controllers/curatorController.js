@@ -1,4 +1,4 @@
-const { curateVideos } = require('../services/gemini/videoCurator');
+const { curateVideos } = require('../services/model/videoCurator');
 const { searchYouTubeVideos } = require('../utils/youtube');
 
 // Search and curate YouTube videos for a topic

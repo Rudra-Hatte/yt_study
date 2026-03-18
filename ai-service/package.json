@@ -1,12 +1,13 @@
 {
   "name": "yt-study-ai-service",
   "version": "1.0.0",
-  "description": "AI service for YouTube study platform using Google Gemini",
+  "description": "AI service for YouTube study platform with provider-agnostic model gateway",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest"
+    "test": "jest",
+    "rag:status": "node -e \"require('dotenv').config(); const mongoose=require('mongoose'); mongoose.connect(process.env.MONGODB_URI).then(async()=>{const c=await mongoose.connection.db.collection('knowledgechunks').countDocuments({}); console.log('knowledgechunks:',c); await mongoose.disconnect();}).catch(e=>{console.error(e.message); process.exit(1);});\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.0",

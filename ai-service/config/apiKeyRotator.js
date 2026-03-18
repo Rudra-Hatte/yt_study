@@ -5,12 +5,20 @@
 
 class APIKeyRotator {
   constructor() {
-    // Load all API keys from environment variables
-    this.geminiKeys = [
-      process.env.GEMINI_API_KEY_1,
-      process.env.GEMINI_API_KEY_2,
-      process.env.GEMINI_API_KEY_3,
-      process.env.GEMINI_API_KEY_4
+    this.primaryKeys = [
+      process.env.PRIMARY_API_KEY_1,
+      process.env.PRIMARY_API_KEY_2,
+      process.env.PRIMARY_API_KEY_3,
+      process.env.PRIMARY_API_KEY_4,
+      process.env.PRIMARY_API_KEY
+    ].filter(key => key && key.trim() !== '');
+
+    this.backupKeys = [
+      process.env.BACKUP_API_KEY_1,
+      process.env.BACKUP_API_KEY_2,
+      process.env.BACKUP_API_KEY_3,
+      process.env.BACKUP_API_KEY_4,
+      process.env.BACKUP_API_KEY
     ].filter(key => key && key.trim() !== '');
 
     this.youtubeKeys = [
@@ -21,42 +29,67 @@ class APIKeyRotator {
     ].filter(key => key && key.trim() !== '');
 
     // Track current index for round-robin rotation
-    this.geminiIndex = 0;
+    this.primaryIndex = 0;
+    this.backupIndex = 0;
     this.youtubeIndex = 0;
 
     // Track failed keys to temporarily skip them
-    this.failedGeminiKeys = new Set();
+    this.failedPrimaryKeys = new Set();
+    this.failedBackupKeys = new Set();
     this.failedYoutubeKeys = new Set();
 
-    console.log(`✅ Loaded ${this.geminiKeys.length} Gemini API keys`);
+    console.log(`✅ Loaded ${this.primaryKeys.length} primary model API keys`);
+    console.log(`✅ Loaded ${this.backupKeys.length} backup model API keys`);
     console.log(`✅ Loaded ${this.youtubeKeys.length} YouTube API keys`);
   }
 
   /**
-   * Get next available Gemini API key
+   * Get next available primary model API key
    */
-  getGeminiKey() {
-    if (this.geminiKeys.length === 0) {
-      throw new Error('No Gemini API keys configured');
+  getPrimaryKey() {
+    if (this.primaryKeys.length === 0) {
+      throw new Error('No primary model API keys configured');
     }
 
-    // Find next available key that hasn't failed recently
     let attempts = 0;
-    while (attempts < this.geminiKeys.length) {
-      const key = this.geminiKeys[this.geminiIndex];
-      this.geminiIndex = (this.geminiIndex + 1) % this.geminiKeys.length;
+    while (attempts < this.primaryKeys.length) {
+      const key = this.primaryKeys[this.primaryIndex];
+      this.primaryIndex = (this.primaryIndex + 1) % this.primaryKeys.length;
 
-      if (!this.failedGeminiKeys.has(key)) {
-        console.log(`🔑 Using Gemini key #${this.geminiIndex + 1}/${this.geminiKeys.length}`);
+      if (!this.failedPrimaryKeys.has(key)) {
         return key;
       }
       attempts++;
     }
 
-    // If all keys have failed, clear failed set and start over
-    console.warn('⚠️  All Gemini keys failed, resetting failure state');
-    this.failedGeminiKeys.clear();
-    return this.geminiKeys[this.geminiIndex];
+    console.warn('⚠️  All primary model keys failed, resetting failure state');
+    this.failedPrimaryKeys.clear();
+    return this.primaryKeys[this.primaryIndex];
+  }
+
+  /**
+   * Get next available backup model API key
+   */
+  getBackupKey() {
+    if (this.backupKeys.length === 0) {
+      throw new Error('No backup model API keys configured');
+    }
+
+    let attempts = 0;
+    while (attempts < this.backupKeys.length) {
+      const key = this.backupKeys[this.backupIndex];
+      this.backupIndex = (this.backupIndex + 1) % this.backupKeys.length;
+
+      if (!this.failedBackupKeys.has(key)) {
+        console.log(`🔑 Using backup model key #${this.backupIndex + 1}/${this.backupKeys.length}`);
+        return key;
+      }
+      attempts++;
+    }
+
+    console.warn('⚠️  All backup model keys failed, resetting failure state');
+    this.failedBackupKeys.clear();
+    return this.backupKeys[this.backupIndex];
   }
 
   /**
@@ -87,16 +120,28 @@ class APIKeyRotator {
   }
 
   /**
-   * Mark a Gemini key as failed (rate limited or quota exceeded)
+   * Mark a backup model key as failed (rate limited or quota exceeded)
    */
-  markGeminiKeyFailed(key) {
-    this.failedGeminiKeys.add(key);
-    console.warn(`❌ Marked Gemini key as failed. Failed keys: ${this.failedGeminiKeys.size}/${this.geminiKeys.length}`);
+  markBackupKeyFailed(key) {
+    this.failedBackupKeys.add(key);
+    console.warn(`❌ Marked backup model key as failed. Failed keys: ${this.failedBackupKeys.size}/${this.backupKeys.length}`);
 
-    // Auto-recover after 1 minute
     setTimeout(() => {
-      this.failedGeminiKeys.delete(key);
-      console.log(`♻️  Recovered Gemini key after cooldown`);
+      this.failedBackupKeys.delete(key);
+      console.log('♻️  Recovered backup model key after cooldown');
+    }, 60000);
+  }
+
+  /**
+   * Mark a primary model key as failed (rate limited or quota exceeded)
+   */
+  markPrimaryKeyFailed(key) {
+    this.failedPrimaryKeys.add(key);
+    console.warn(`❌ Marked primary model key as failed. Failed keys: ${this.failedPrimaryKeys.size}/${this.primaryKeys.length}`);
+
+    setTimeout(() => {
+      this.failedPrimaryKeys.delete(key);
+      console.log('♻️  Recovered primary model key after cooldown');
     }, 60000);
   }
 
@@ -119,10 +164,15 @@ class APIKeyRotator {
    */
   getStats() {
     return {
-      gemini: {
-        total: this.geminiKeys.length,
-        failed: this.failedGeminiKeys.size,
-        available: this.geminiKeys.length - this.failedGeminiKeys.size
+      primary: {
+        total: this.primaryKeys.length,
+        failed: this.failedPrimaryKeys.size,
+        available: this.primaryKeys.length - this.failedPrimaryKeys.size
+      },
+      backup: {
+        total: this.backupKeys.length,
+        failed: this.failedBackupKeys.size,
+        available: this.backupKeys.length - this.failedBackupKeys.size
       },
       youtube: {
         total: this.youtubeKeys.length,

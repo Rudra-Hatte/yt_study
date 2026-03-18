@@ -124,6 +124,11 @@ export const CourseProvider = ({ children }) => {
           setMyCourses(prev => prev.map(c => 
             c.id === localCourse.id ? { ...savedCourse, id: savedCourse._id } : c
           ));
+
+          // Notify dashboards/lists to refresh immediately after creation.
+          window.dispatchEvent(new CustomEvent('course:created', {
+            detail: { courseId: savedCourse._id }
+          }));
           
           return savedCourse;
         } else {
@@ -139,7 +144,7 @@ export const CourseProvider = ({ children }) => {
   };
 
   // Update video progress
-  const updateVideoProgress = async (courseId, videoId, completed) => {
+  const updateVideoProgress = async (courseId, videoId, completed, watchTime = 0, totalDuration = 0) => {
     setProgress(prev => ({
       ...prev,
       videoProgress: {
@@ -148,18 +153,66 @@ export const CourseProvider = ({ children }) => {
       }
     }));
 
-    // Optionally save progress to backend
+    // Keep course lists in sync locally.
+    setCourses(prev => prev.map(course => {
+      const currentCourseId = course._id || course.id;
+      if (String(currentCourseId) !== String(courseId)) return course;
+
+      const videos = (course.videos || []).map((video) => {
+        const currentVideoId = video.dbVideoId || video._id || video.id;
+        if (String(currentVideoId) !== String(videoId)) return video;
+        return { ...video, completed };
+      });
+      const completedLessons = videos.filter(v => v.completed).length;
+
+      return {
+        ...course,
+        videos,
+        completedLessons,
+        progress: videos.length ? Math.round((completedLessons / videos.length) * 100) : 0
+      };
+    }));
+
+    setMyCourses(prev => prev.map(course => {
+      const currentCourseId = course._id || course.id;
+      if (String(currentCourseId) !== String(courseId)) return course;
+
+      const videos = (course.videos || []).map((video) => {
+        const currentVideoId = video.dbVideoId || video._id || video.id;
+        if (String(currentVideoId) !== String(videoId)) return video;
+        return { ...video, completed };
+      });
+      const completedLessons = videos.filter(v => v.completed).length;
+
+      return {
+        ...course,
+        videos,
+        completedLessons,
+        progress: videos.length ? Math.round((completedLessons / videos.length) * 100) : 0
+      };
+    }));
+
+    // Save progress to backend.
     const token = getAuthToken();
     if (token) {
       try {
-        await fetch(`${API_URL}/api/progress/video`, {
+        await fetch(`${API_URL}/api/progress/${videoId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ courseId, videoId, completed })
+          body: JSON.stringify({
+            watchTime,
+            totalDuration,
+            completed,
+            watchPercentage: totalDuration > 0 ? Math.min(Math.floor((watchTime / totalDuration) * 100), 100) : (completed ? 100 : 0)
+          })
         });
+
+        window.dispatchEvent(new CustomEvent('progress:updated', {
+          detail: { courseId, videoId, completed }
+        }));
       } catch (error) {
         console.error('Error saving video progress:', error);
       }
@@ -175,7 +228,7 @@ export const CourseProvider = ({ children }) => {
     if (totalVideos === 0) return 0;
     
     const completedVideos = course.videos.filter(v => 
-      progress.videoProgress[`${courseId}-${v.id || v._id}`]
+      progress.videoProgress[`${courseId}-${v.dbVideoId || v._id || v.id}`]
     ).length;
 
     return Math.round((completedVideos / totalVideos) * 100);
