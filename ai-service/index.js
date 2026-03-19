@@ -11,6 +11,8 @@ const app = express();
 // Validate API keys are loaded
 console.log('🔑 API Key Rotation System Initialized');
 console.log(apiKeyRotator.getStats());
+console.log('🤖 Primary model:', String(process.env.PRIMARY_MODEL || '').trim() || 'llama-3.3-70b-versatile (default)');
+console.log('🛟 Backup model:', String(process.env.BACKUP_MODEL || '').trim() || 'gemini-2.5-flash (default)');
 
 // Middleware
 const allowedOrigins = process.env.FRONTEND_URL 

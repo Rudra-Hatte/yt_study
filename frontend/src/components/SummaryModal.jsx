@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingSpinner } from './LoadingSpinner';
 import { AI_SERVICE_URL } from '../config/api';
 
-const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
+const SummaryModal = ({ isOpen, onClose, videoTitle, videoId, lessonTopic }) => {
   const [summary, setSummary] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -28,6 +28,7 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
         body: JSON.stringify({
           videoId: videoId,
           title: videoTitle,
+          focusTopic: lessonTopic,
           format: 'detailed',
           useRag: false
         }),
@@ -82,6 +83,9 @@ const SummaryModal = ({ isOpen, onClose, videoTitle, videoId }) => {
               <div>
                 <h2 className="text-2xl font-bold mb-2">📑 Lesson Summary</h2>
                 <p className="text-purple-100">{videoTitle}</p>
+                {lessonTopic && (
+                  <p className="text-purple-100 text-sm mt-1">Topic focus: {lessonTopic}</p>
+                )}
               </div>
               <div className="flex items-center space-x-3">
                 <button

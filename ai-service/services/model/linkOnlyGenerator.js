@@ -56,9 +56,9 @@ function normalizeSummary(parsed) {
   };
 }
 
-async function generateQuizFromLink(videoId, title, numQuestions = 10, difficulty = 'medium') {
+async function generateQuizFromLink(videoId, title, numQuestions = 10, difficulty = 'medium', focusTopic = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const topic = extractMainTopic(title);
+  const topic = String(focusTopic || '').trim() || extractMainTopic(title);
   
   const userPrompt = `You are generating a ${difficulty} quiz for a tutorial video about "${topic}".
 Video: ${videoUrl}
@@ -87,9 +87,9 @@ Return ONLY valid JSON (no markdown, no backticks):
   return normalizeQuiz(extractJson(response.text));
 }
 
-async function generateFlashcardsFromLink(videoId, title, numCards = 10) {
+async function generateFlashcardsFromLink(videoId, title, numCards = 10, focusTopic = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const topic = extractMainTopic(title);
+  const topic = String(focusTopic || '').trim() || extractMainTopic(title);
   
   const userPrompt = `Create ${numCards} learning flashcards for a tutorial about "${topic}".
 Video: ${videoUrl}

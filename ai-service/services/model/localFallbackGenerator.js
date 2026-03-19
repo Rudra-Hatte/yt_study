@@ -15,8 +15,8 @@ function pickDifficulty(title = '') {
   return 'beginner';
 }
 
-function buildFallbackQuiz(videoId, title, numQuestions = 10, difficulty = 'medium') {
-  const topic = title || `Video ${videoId}`;
+function buildFallbackQuiz(videoId, title, numQuestions = 10, difficulty = 'medium', focusTopic = null) {
+  const topic = String(focusTopic || '').trim() || title || `Video ${videoId}`;
   const keywords = splitKeywords(topic);
   const skill = keywords[0] || 'core concept';
   const items = [];
@@ -47,8 +47,8 @@ function buildFallbackQuiz(videoId, title, numQuestions = 10, difficulty = 'medi
   };
 }
 
-function buildFallbackFlashcards(videoId, title, numCards = 10) {
-  const topic = title || `Video ${videoId}`;
+function buildFallbackFlashcards(videoId, title, numCards = 10, focusTopic = null) {
+  const topic = String(focusTopic || '').trim() || title || `Video ${videoId}`;
   const keywords = splitKeywords(topic);
   const cards = [];
   const count = Math.max(5, Number(numCards) || 10);

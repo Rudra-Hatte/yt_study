@@ -6,18 +6,25 @@ const { chatWithFallback } = require('../modelClient');
  * @param {string} title - The video title
  * @param {number} numCards - Number of flashcards to generate (default: 10)
  * @param {string} [transcript] - Optional video transcript for better context
+ * @param {string} [focusTopic] - Optional lesson topic to force topic-based generation
  * @returns {Array} Array of flashcards with front and back content
  */
-async function generateFlashcards(videoId, title, numCards = 10, transcript = null) {
+async function generateFlashcards(videoId, title, numCards = 10, transcript = null, focusTopic = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const topicLabel = String(focusTopic || '').trim();
   console.log('📚 Generating flashcards for video:', videoUrl);
   console.log('📝 Title:', title);
+  if (topicLabel) {
+    console.log('🎯 Topic focus:', topicLabel);
+  }
   if (transcript) {
     console.log('📄 Using transcript content (length:', transcript.length, 'chars)');
   }
   
   let contentSource = '';
-  if (transcript && transcript.trim().length > 100) {
+  if (topicLabel) {
+    contentSource = `Study Topic: "${topicLabel}"\n`;
+  } else if (transcript && transcript.trim().length > 100) {
     // Use the actual transcript content
     contentSource = `Video Transcript (first 3000 chars):\n${transcript.substring(0, 3000)}\n\n`;
   } else {
@@ -25,12 +32,13 @@ async function generateFlashcards(videoId, title, numCards = 10, transcript = nu
     contentSource = `Video Title: "${title}"\n`;
   }
   
-  const prompt = `You are an expert at creating educational flashcards. Based on the video content and topic, create ${numCards} effective flashcards that highlight key concepts, definitions, and principles.
+  const prompt = `You are an expert at creating educational flashcards. Create ${numCards} effective flashcards that highlight key concepts, definitions, and principles.
 
 ${contentSource}
 Video URL: ${videoUrl}
 
-Create educational flashcards that test understanding of the actual video content. Make the flashcards technical, practical, and relevant to what someone would learn from this video. Focus on real concepts, not the course/title structure.
+${topicLabel ? `Create flashcards specifically about the topic "${topicLabel}". Ignore irrelevant video-title words and focus on the actual concept learning.
+` : 'Create educational flashcards that test understanding of the actual video content. Make the flashcards technical, practical, and relevant to what someone would learn from this video. Focus on real concepts, not the course/title structure.'}
 
 For each flashcard:
 1. Front side should contain a clear question about a concept (e.g., "What is X?", "When should you use Y?")

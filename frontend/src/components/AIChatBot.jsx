@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext_simple';
-import { AI_SERVICE_URL } from '../config/api';
+import { API_URL, AI_SERVICE_URL } from '../config/api';
 import toast from 'react-hot-toast';
 import { MessageCircle, Send, X } from 'lucide-react';
 
@@ -28,18 +28,31 @@ const AIChatBot = () => {
     setIsLoading(true);
 
     try {
-      console.log('Sending message to AI service:', AI_SERVICE_URL);
-      
-      const response = await fetch(`${AI_SERVICE_URL}/api/ai/chat`, {
+      console.log('Sending message to AI service via backend proxy first:', API_URL);
+
+      const payload = {
+        message: userMessage,
+        context: 'general_study_help'
+      };
+
+      // Prefer backend proxy to avoid browser CORS/env issues, then fallback direct to AI service.
+      let response = await fetch(`${API_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          message: userMessage,
-          context: 'general_study_help'
-        })
+        body: JSON.stringify(payload)
       });
+
+      if (!response.ok) {
+        response = await fetch(`${AI_SERVICE_URL}/api/ai/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      }
 
       console.log('Response status:', response.status);
 
@@ -93,6 +106,7 @@ const AIChatBot = () => {
       console.error('Chat error:', error);
       console.error('Error details:', {
         message: error.message,
+        API_URL,
         AI_SERVICE_URL,
         userMessage
       });

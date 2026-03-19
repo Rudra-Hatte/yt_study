@@ -261,6 +261,34 @@ router.post('/generate-course-ai', auth, async (req, res) => {
   }
 });
 
+// Chat with AI Study Buddy (no auth required for in-app assistant)
+router.post('/chat', async (req, res) => {
+  try {
+    const { message, context, courseId } = req.body;
+
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required'
+      });
+    }
+
+    const result = await aiService.chatWithAI({
+      message: String(message).trim(),
+      context: context || 'general_study_help',
+      courseId: courseId || null
+    });
+
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error('AI chat proxy error:', err.message);
+    return res.status(502).json({
+      success: false,
+      error: err.message || 'Failed to reach AI service'
+    });
+  }
+});
+
 // Summarize video content
 router.post('/summarize-video', auth, async (req, res) => {
   try {

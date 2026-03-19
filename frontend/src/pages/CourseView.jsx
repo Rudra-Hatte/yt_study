@@ -118,6 +118,7 @@ const CourseView = () => {
       // Get the video ID from current video
       const videoId = course.videos[currentVideo].youtubeId;
       const videoTitle = course.videos[currentVideo].title;
+      const lessonTopic = getVideoTopic(course.videos[currentVideo], currentVideo) || course.topic || null;
       
       console.log('🎬 Sending video to Gemini:', videoId);
       toast.loading('Generating quiz from video...');
@@ -132,6 +133,7 @@ const CourseView = () => {
           body: JSON.stringify({
             videoId: videoId,
             title: videoTitle,
+            focusTopic: lessonTopic,
             numQuestions: 10,
             difficulty: 'medium',
             useRag: false
@@ -178,6 +180,7 @@ const CourseView = () => {
       setIsGenerating(true);
       
       const videoId = course.videos[currentVideo].youtubeId;
+      const lessonTopic = getVideoTopic(course.videos[currentVideo], currentVideo) || course.topic || null;
 
       // Use direct AI generation path (no transcript required)
       toast.loading('Generating flashcards...');
@@ -189,6 +192,7 @@ const CourseView = () => {
         body: JSON.stringify({
           videoId: videoId,
           title: course.videos[currentVideo].title,
+          focusTopic: lessonTopic,
           numCards: 10,
           useRag: false
         }),
@@ -356,6 +360,7 @@ const CourseView = () => {
         onClose={() => setShowSummary(false)}
         videoTitle={course.videos[currentVideo].title}
         videoId={course.videos[currentVideo].youtubeId}
+        lessonTopic={getVideoTopic(course.videos[currentVideo], currentVideo) || course.topic || null}
       />
 
       <LoadingOverlay

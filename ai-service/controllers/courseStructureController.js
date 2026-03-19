@@ -9,7 +9,7 @@ const { preprocessTranscript } = require('../utils/contentPreprocessor');
  */
 exports.generateCourseAI = async (req, res, next) => {
   try {
-    const { topic, difficulty = 'beginner', duration = '4-6 hours' } = req.body;
+    const { topic, difficulty = 'beginner', duration = '4-6 hours', requireAiTopicFlow = true } = req.body;
     
     if (!topic) {
       return res.status(400).json({ 
@@ -20,6 +20,15 @@ exports.generateCourseAI = async (req, res, next) => {
 
     // Generate algorithmic personalized course structure
     const aiCourseStructure = await buildPersonalizedCourse(topic, difficulty, duration);
+
+    const topicFlowSource = aiCourseStructure?.metadata?.topicFlow?.source;
+    if (requireAiTopicFlow && topicFlowSource === 'fallback') {
+      return res.status(503).json({
+        success: false,
+        error: 'AI topic planner is unavailable. Please check model API keys and PRIMARY_MODEL configuration.',
+        details: aiCourseStructure?.metadata?.topicFlow || null
+      });
+    }
 
     res.json({
       success: true,

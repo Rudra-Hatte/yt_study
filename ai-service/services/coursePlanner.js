@@ -47,6 +47,21 @@ function parseBudget(duration = '4-6 hours') {
   return { minMinutes: 240, maxMinutes: 360 };
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getTargetTopicCount(duration = '4-6 hours', difficulty = 'beginner') {
+  const budget = parseBudget(duration);
+  const midpointMinutes = Math.round((budget.minMinutes + budget.maxMinutes) / 2);
+  const level = String(difficulty || 'beginner').toLowerCase();
+
+  // Approximate minutes per topic based on expected concept depth.
+  const minutesPerTopic = level === 'advanced' ? 55 : level === 'intermediate' ? 45 : 35;
+  const estimated = Math.round(midpointMinutes / minutesPerTopic);
+  return clamp(estimated, 4, 12);
+}
+
 function getTopicProfile(topic, difficulty) {
   const t = topic.toLowerCase();
   const d = String(difficulty || 'beginner').toLowerCase();
@@ -102,19 +117,22 @@ function buildSearchQueries(topic, difficulty) {
 
 async function buildLearningTopics(topic, difficulty, duration) {
   const fallback = getTopicProfile(topic, difficulty).essential;
+  const targetTopicCount = getTargetTopicCount(duration, difficulty);
 
   try {
     const prompt = `Create a practical learning-topic list for this course.
 Topic: ${topic}
 Difficulty: ${difficulty}
 Duration target: ${duration}
+Target number of topics: ${targetTopicCount}
 
 Return JSON only in this schema:
-{"topics":["topic 1","topic 2","topic 3","topic 4","topic 5","topic 6"]}
+{"topics":["topic 1","topic 2","topic 3"]}
 
 Rules:
 - Keep topics specific and beginner-friendly if difficulty is beginner.
 - Order from fundamentals to practical application.
+- Return exactly ${targetTopicCount} topics.
 - No markdown.`;
 
     const response = await chatWithFallback({
@@ -134,13 +152,29 @@ Rules:
       : [];
 
     if (topics.length >= 3) {
-      return topics.slice(0, 10);
+      const dedupedTopics = Array.from(new Map(topics.map((t) => [t.toLowerCase(), t])).values());
+      return {
+        topics: dedupedTopics.slice(0, targetTopicCount),
+        source: response.source || 'primary',
+        model: response.model || null
+      };
     }
   } catch (error) {
     console.warn('⚠️ Topic planning fallback activated:', error.message);
+    return {
+      topics: fallback,
+      source: 'fallback',
+      model: null,
+      error: error.message
+    };
   }
 
-  return fallback;
+  return {
+    topics: fallback.slice(0, targetTopicCount),
+    source: 'fallback',
+    model: null,
+    error: 'AI topic planner returned insufficient topics'
+  };
 }
 
 function estimateLevelFromText(text = '') {
@@ -394,6 +428,8 @@ async function getCandidateVideosFromTopics(topic, difficulty, learningTopics, l
   const queryPool = [];
 
   for (const subtopic of learningTopics) {
+    queryPool.push({ query: `${subtopic}`, sourceTopic: subtopic });
+    queryPool.push({ query: `${subtopic} ${level}`, sourceTopic: subtopic });
     queryPool.push({ query: `${topic} ${subtopic} ${level} tutorial`, sourceTopic: subtopic });
     queryPool.push({ query: `${topic} ${subtopic} explained`, sourceTopic: subtopic });
   }
@@ -516,6 +552,23 @@ function selectTopicFirstPath(candidates, learningTopics, budget) {
   return { selected, usedMinutes };
 }
 
+function orderByTopicSequence(videos, learningTopics) {
+  if (!Array.isArray(videos) || videos.length <= 1) return videos;
+  const indexMap = new Map(learningTopics.map((t, i) => [String(t || '').toLowerCase(), i]));
+
+  return [...videos].sort((a, b) => {
+    const ai = indexMap.has(String(a.assignedTopic || '').toLowerCase())
+      ? indexMap.get(String(a.assignedTopic || '').toLowerCase())
+      : Number.MAX_SAFE_INTEGER;
+    const bi = indexMap.has(String(b.assignedTopic || '').toLowerCase())
+      ? indexMap.get(String(b.assignedTopic || '').toLowerCase())
+      : Number.MAX_SAFE_INTEGER;
+
+    if (ai !== bi) return ai - bi;
+    return (b.finalScore || 0) - (a.finalScore || 0);
+  });
+}
+
 // Map video concepts to closest learning topic
 function findBestMatchingTopic(videoTitle, concepts, learningTopics) {
   if (!learningTopics || learningTopics.length === 0) return null;
@@ -562,7 +615,8 @@ function formatFinalVideos(ordered, learningTopics = []) {
 async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration = '4-6 hours') {
   const profile = getTopicProfile(topic, difficulty);
   const budget = parseBudget(duration);
-  const learningTopics = await buildLearningTopics(topic, difficulty, duration);
+  const topicPlan = await buildLearningTopics(topic, difficulty, duration);
+  const learningTopics = topicPlan.topics;
 
   let candidates = await getCandidateVideosFromTopics(topic, difficulty, learningTopics, 96);
   if (candidates.length < 20) {
@@ -572,16 +626,10 @@ async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration 
 
   const enriched = await enrichMetadata(candidates, 60);
   const scored = scoreCandidates(enriched, topic, difficulty, profile);
-
   const diverseTop = mmrSelect(scored, 28, 0.75);
-  let { selected, usedMinutes } = selectTopicFirstPath(diverseTop, learningTopics, budget);
 
-  // Safety fallback to the generic coverage selector if topic-first yielded too few lessons.
-  if (selected.length < Math.min(4, learningTopics.length)) {
-    const fallback = selectWithinBudget(diverseTop, profile, budget);
-    selected = fallback.selected;
-    usedMinutes = fallback.usedMinutes;
-  }
+  // Always prioritize one video per planned topic in exact topic order.
+  let { selected, usedMinutes } = selectTopicFirstPath(scored, learningTopics, budget);
 
   // If time budget is still too low, force-fill with longer high-scoring videos.
   if (usedMinutes < budget.minMinutes) {
@@ -593,14 +641,24 @@ async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration 
     for (const candidate of remaining) {
       if (usedMinutes >= budget.minMinutes) break;
       if (usedMinutes + candidate.durationMinutes > budget.maxMinutes) continue;
-      selected.push(candidate);
+      const inferredTopic = candidate.sourceTopic
+        || findBestMatchingTopic(candidate.title, candidate.matchedConcepts, learningTopics)
+        || null;
+      selected.push({ ...candidate, assignedTopic: inferredTopic });
       usedMinutes += candidate.durationMinutes;
     }
   }
 
-  const ordered = selected;
+  const ordered = orderByTopicSequence(selected, learningTopics);
   const videos = formatFinalVideos(ordered, learningTopics);
   const learningPath = buildModules(videos);
+
+  const coveredTopicSet = new Set(
+    videos
+      .map((v) => String(v.coversTopic || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const missingTopics = learningTopics.filter((t) => !coveredTopicSet.has(String(t || '').trim().toLowerCase()));
 
   const totalMinutes = videos.reduce((sum, v) => sum + (v.estimatedMinutes || 0), 0);
 
@@ -635,8 +693,26 @@ async function buildPersonalizedCourse(topic, difficulty = 'beginner', duration 
       selectedCount: videos.length,
       usedMinutes,
       budgetMinutes: budget,
-      plannedTopics: learningTopics
-    }
+      plannedTopics: learningTopics,
+      topicFlow: {
+        source: topicPlan.source,
+        model: topicPlan.model,
+        error: topicPlan.error || null
+      },
+      topicCoverage: {
+        coveredCount: learningTopics.length - missingTopics.length,
+        totalTopics: learningTopics.length,
+        coverageRatio: learningTopics.length ? Number(((learningTopics.length - missingTopics.length) / learningTopics.length).toFixed(3)) : 1,
+        missingTopics
+      }
+    },
+    warnings: missingTopics.length
+      ? [{
+          code: 'MISSING_TOPIC_VIDEOS',
+          message: `Could not find videos for ${missingTopics.length} planned topic(s).`,
+          missingTopics
+        }]
+      : []
   };
 }
 

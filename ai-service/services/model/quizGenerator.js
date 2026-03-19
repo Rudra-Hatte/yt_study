@@ -8,18 +8,25 @@ require('dotenv').config();
  * @param {number} numQuestions - Number of questions to generate (default: 5)
  * @param {string} difficulty - Quiz difficulty level (easy, medium, hard)
  * @param {string} [transcript] - Optional video transcript for better context
+ * @param {string} [focusTopic] - Optional lesson topic to force topic-based questions
  * @returns {Array} Array of quiz questions with options and correct answers
  */
-async function generateQuiz(videoId, title, numQuestions = 5, difficulty = 'medium', transcript = null) {
+async function generateQuiz(videoId, title, numQuestions = 5, difficulty = 'medium', transcript = null, focusTopic = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const topicLabel = String(focusTopic || '').trim();
   console.log('🎬 Generating quiz for video:', videoUrl);
   console.log('📝 Title:', title);
+  if (topicLabel) {
+    console.log('🎯 Topic focus:', topicLabel);
+  }
   if (transcript) {
     console.log('📄 Using transcript content (length:', transcript.length, 'chars)');
   }
   
   let contentSource = '';
-  if (transcript && transcript.trim().length > 100) {
+  if (topicLabel) {
+    contentSource = `Study Topic: "${topicLabel}"\n`;
+  } else if (transcript && transcript.trim().length > 100) {
     // Use the actual transcript content
     contentSource = `Video Transcript (first 3000 chars):\n${transcript.substring(0, 3000)}\n\n`;
   } else {
@@ -27,12 +34,13 @@ async function generateQuiz(videoId, title, numQuestions = 5, difficulty = 'medi
     contentSource = `Video Title: "${title}"\n`;
   }
   
-  const prompt = `You are a quiz generator. Based on the video content and topic, create ${numQuestions} multiple-choice quiz questions at ${difficulty} difficulty level.
+  const prompt = `You are a quiz generator. Create ${numQuestions} multiple-choice quiz questions at ${difficulty} difficulty level.
 
 ${contentSource}
 Video URL: ${videoUrl}
 
-Create educational questions that test understanding of the actual video content/topic. Make questions technical, complex, and relevant to what someone would learn from this video.
+${topicLabel ? `Generate questions only about "${topicLabel}". Do not ask questions about video naming words like tutorial/course/beginners.
+` : 'Create educational questions that test understanding of the actual video content/topic. Make questions technical, complex, and relevant to what someone would learn from this video.'}
 
 IMPORTANT: Return ONLY valid JSON with NO markdown formatting, NO code blocks, NO extra text. Just the raw JSON object.
 

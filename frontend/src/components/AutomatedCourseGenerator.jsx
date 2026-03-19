@@ -124,12 +124,20 @@ const AutomatedCourseGenerator = () => {
         body: JSON.stringify({
           topic: courseData.topic,
           difficulty: courseData.difficulty,
-          duration: courseData.duration
+          duration: courseData.duration,
+          requireAiTopicFlow: true
         }),
       });
 
       if (!planResponse.ok) {
-        throw new Error('Failed to generate AI course plan');
+        let errorMessage = 'Failed to generate AI course plan';
+        try {
+          const errorPayload = await planResponse.json();
+          errorMessage = errorPayload?.error || errorPayload?.message || errorMessage;
+        } catch (_) {
+          // Keep default error message if parsing fails.
+        }
+        throw new Error(errorMessage);
       }
 
       const planResult = await planResponse.json();
