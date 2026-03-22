@@ -10,7 +10,7 @@ require('dotenv').config();
  */
 async function curateVideos(watchHistory, availableVideos, learningGoal = '') {
   try {
-    console.log('🤖 Curating videos with model gateway...');
+    console.log('Curating videos with model gateway...');
     
     // Format watch history for the prompt
     const watchHistoryText = watchHistory.map(video => 
@@ -63,7 +63,7 @@ The JSON must have this exact structure:
     });
 
     const textResponse = response.text || '';
-    console.log('✅ Model response received for video curation');
+    console.log('Model response received for video curation');
     
     // Extract JSON from response
     let jsonStr = textResponse.trim();
@@ -78,10 +78,10 @@ The JSON must have this exact structure:
     }
     
     const result = JSON.parse(jsonStr);
-    console.log('✅ Video curation completed successfully');
+    console.log('Video curation completed successfully');
     return result;
   } catch (error) {
-    console.error('❌ Error curating videos:', error.message);
+    console.error('Error curating videos:', error.message);
     throw new Error(`Failed to curate videos: ${error.message}`);
   }
 }

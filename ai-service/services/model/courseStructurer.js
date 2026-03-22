@@ -9,7 +9,7 @@ require('dotenv').config();
  */
 async function generateCourseStructure(videoSummaries, courseTopic) {
   try {
-    console.log('🤖 Generating course structure...');
+    console.log('Generating course structure...');
     
     // Format video summaries for analysis
     const videoAnalysisText = videoSummaries.map((video, index) => 
@@ -84,7 +84,7 @@ The JSON must have this exact structure:
     });
 
     const textResponse = response.text || '';
-    console.log('✅ Model response received for course structure');
+    console.log('Model response received for course structure');
     
     // Extract JSON from response
     let jsonStr = textResponse.trim();
@@ -99,10 +99,10 @@ The JSON must have this exact structure:
     }
     
     const result = JSON.parse(jsonStr);
-    console.log('✅ Course structure generated successfully');
+    console.log('Course structure generated successfully');
     return result;
   } catch (error) {
-    console.error('❌ Error generating course structure:', error.message);
+    console.error('Error generating course structure:', error.message);
     throw new Error(`Failed to generate course structure: ${error.message}`);
   }
 }
@@ -115,7 +115,7 @@ The JSON must have this exact structure:
  */
 async function analyzeConceptRelationships(transcripts, courseTopic) {
   try {
-    console.log('🤖 Analyzing concept relationships...');
+    console.log('Analyzing concept relationships...');
     
     // Limit analysis to avoid token limits
     const limitedTranscripts = transcripts.slice(0, 10).map((transcript, index) => 
@@ -167,7 +167,7 @@ The JSON must have this exact structure:
     });
 
     const textResponse = response.text || '';
-    console.log('✅ Model response received for concept analysis');
+    console.log('Model response received for concept analysis');
     
     // Extract JSON from response
     let jsonStr = textResponse.trim();
@@ -182,10 +182,10 @@ The JSON must have this exact structure:
     }
     
     const result = JSON.parse(jsonStr);
-    console.log('✅ Concept relationships analyzed successfully');
+    console.log('Concept relationships analyzed successfully');
     return result;
   } catch (error) {
-    console.error('❌ Error analyzing concept relationships:', error.message);
+    console.error('Error analyzing concept relationships:', error.message);
     throw new Error(`Failed to analyze concept relationships: ${error.message}`);
   }
 }

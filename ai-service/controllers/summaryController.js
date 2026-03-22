@@ -9,7 +9,7 @@ exports.createSummary = async (req, res, next) => {
   try {
     const { videoId, format = 'detailed', title, useRag = true } = req.body;
     
-    console.log('📄 Summary generation requested for video:', videoId);
+    console.log('Summary generation requested for video:', videoId);
     
     if (!videoId) {
       return res.status(400).json({ success: false, error: 'Video ID is required' });
@@ -35,7 +35,7 @@ exports.createSummary = async (req, res, next) => {
 
         summary = { ...ragResponse.data, rag: ragResponse.rag };
       } catch (ragError) {
-        console.warn('⚠️ RAG summary path failed, trying transcript extraction:', ragError.message);
+        console.warn('RAG summary path failed, trying transcript extraction:', ragError.message);
       }
     }
 
@@ -45,40 +45,40 @@ exports.createSummary = async (req, res, next) => {
         try {
           transcript = await getVideoTranscript(videoId);
           if (transcript && transcript.trim().length > 100) {
-            console.log('✅ Transcript extracted, will use for generation');
+            console.log('Transcript extracted, will use for generation');
           } else {
             transcript = null;
           }
         } catch (transcriptError) {
-          console.log('ℹ️ Transcript extraction failed, will use title-only mode:', transcriptError.message);
+          console.log('Transcript extraction failed, will use title-only mode:', transcriptError.message);
           transcript = null;
         }
       }
 
       // Fallback: try standard generation with or without transcript
-      console.log('🤖 Generating summary with standard fallback path...');
+      console.log('Generating summary with standard fallback path...');
       try {
         summary = await generateSummary(videoId, safeTitle, format, transcript);
         summary.rag = { used: false, fallback: true, hasTranscript: !!transcript };
       } catch (modelError) {
-        console.warn('⚠️ Standard summary generation failed, trying link-only fallback:', modelError.message);
+        console.warn('Standard summary generation failed, trying link-only fallback:', modelError.message);
         try {
           summary = await generateSummaryFromLink(videoId, safeTitle, format);
           summary.rag = { used: false, fallback: true, mode: 'link-only-model' };
         } catch (linkError) {
-          console.warn('⚠️ Link-only summary generation failed, using local fallback:', linkError.message);
+          console.warn('Link-only summary generation failed, using local fallback:', linkError.message);
           summary = buildFallbackSummary(videoId, safeTitle, format);
           summary.rag = { used: false, fallback: true, mode: 'local' };
         }
       }
     }
     
-    console.log('✅ Summary generated successfully');
+    console.log('Summary generated successfully');
     
     // Send response
     res.json({ success: true, data: summary });
   } catch (error) {
-    console.error('❌ Summary generation error:', error.message);
+    console.error('Summary generation error:', error.message);
     console.error('Stack:', error.stack);
     res.status(500).json({ 
       success: false, 

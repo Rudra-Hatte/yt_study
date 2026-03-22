@@ -9,7 +9,7 @@ exports.createQuiz = async (req, res, next) => {
   try {
     const { videoId, numQuestions = 10, difficulty = 'medium', title, useRag = true, focusTopic } = req.body;
     
-    console.log('📝 Quiz generation requested for video:', videoId);
+    console.log('Quiz generation requested for video:', videoId);
     
     if (!videoId) {
       return res.status(400).json({ success: false, error: 'Video ID is required' });
@@ -35,7 +35,7 @@ exports.createQuiz = async (req, res, next) => {
 
         quiz = { ...ragResponse.data, rag: ragResponse.rag };
       } catch (ragError) {
-        console.warn('⚠️ RAG quiz path failed, trying transcript extraction:', ragError.message);
+        console.warn('RAG quiz path failed, trying transcript extraction:', ragError.message);
       }
     }
 
@@ -45,40 +45,40 @@ exports.createQuiz = async (req, res, next) => {
         try {
           transcript = await getVideoTranscript(videoId);
           if (transcript && transcript.trim().length > 100) {
-            console.log('✅ Transcript extracted, will use for generation');
+            console.log('Transcript extracted, will use for generation');
           } else {
             transcript = null;
           }
         } catch (transcriptError) {
-          console.log('ℹ️ Transcript extraction failed, will use title-only mode:', transcriptError.message);
+          console.log('Transcript extraction failed, will use title-only mode:', transcriptError.message);
           transcript = null;
         }
       }
 
       // Fallback: generate from explicit topic when provided.
-      console.log('🤖 Generating quiz with standard fallback path...');
+      console.log('Generating quiz with standard fallback path...');
       try {
         quiz = await generateQuiz(videoId, title || 'YouTube Video', numQuestions, difficulty, transcript, topicFocus || null);
         quiz.rag = { used: false, fallback: true, hasTranscript: !!transcript };
       } catch (modelError) {
-        console.warn('⚠️ Standard quiz generation failed, trying link-only fallback:', modelError.message);
+        console.warn('Standard quiz generation failed, trying link-only fallback:', modelError.message);
         try {
           quiz = await generateQuizFromLink(videoId, title || 'YouTube Video', numQuestions, difficulty, topicFocus || null);
           quiz.rag = { used: false, fallback: true, mode: 'link-only-model' };
         } catch (linkError) {
-          console.warn('⚠️ Link-only quiz generation failed, using local fallback:', linkError.message);
+          console.warn('Link-only quiz generation failed, using local fallback:', linkError.message);
           quiz = buildFallbackQuiz(videoId, title || 'YouTube Video', numQuestions, difficulty, topicFocus || null);
           quiz.rag = { used: false, fallback: true, mode: 'local' };
         }
       }
     }
     
-    console.log('✅ Quiz generated successfully');
+    console.log('Quiz generated successfully');
     
     // Send response
     res.json({ success: true, data: quiz });
   } catch (error) {
-    console.error('❌ Quiz generation error:', error.message);
+    console.error('Quiz generation error:', error.message);
     console.error('Stack:', error.stack);
     res.status(500).json({ 
       success: false, 

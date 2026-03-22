@@ -10,10 +10,10 @@ const { chatWithFallback } = require('../modelClient');
  */
 async function generateSummary(videoId, title, format = 'detailed', transcript = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  console.log('📝 Generating summary for video:', videoUrl);
-  console.log('📝 Title:', title);
+  console.log('Generating summary for video:', videoUrl);
+  console.log('Title:', title);
   if (transcript) {
-    console.log('📄 Using transcript content (length:', transcript.length, 'chars)');
+    console.log('Using transcript content (length:', transcript.length, 'chars)');
   }
   
   let formatInstructions = '';
@@ -49,7 +49,7 @@ JSON structure (keep responses concise to avoid truncation):
 Where difficulty is: beginner, intermediate, or advanced`;
 
   try {
-    console.log('🤖 Generating summary using model gateway...');
+    console.log('Generating summary using model gateway...');
     const response = await chatWithFallback({
       systemPrompt: 'You are an educational content summarizer. Always respond with valid JSON only, no markdown or extra text.',
       userPrompt: prompt,
@@ -58,7 +58,7 @@ Where difficulty is: beginner, intermediate, or advanced`;
     });
 
     const textResponse = response.text || '';
-    console.log('✅ Model response received for summary');
+    console.log('Model response received for summary');
     
     // Extract JSON from response
     let jsonStr = textResponse.trim();
@@ -78,7 +78,7 @@ Where difficulty is: beginner, intermediate, or advanced`;
       result = JSON.parse(jsonStr);
     } catch (parseError) {
       // Try to fix common JSON issues
-      console.log('⚠️ JSON parse failed, attempting to fix...');
+      console.log('JSON parse failed, attempting to fix...');
       
       // Extract summary - handle multi-line strings
       let summaryText = '';
@@ -137,7 +137,7 @@ Where difficulty is: beginner, intermediate, or advanced`;
           nextSteps: ['Review the material', 'Try hands-on examples'],
           difficulty: difficulty
         };
-        console.log('✅ Recovered partial summary data');
+        console.log('Recovered partial summary data');
       } else {
         // If all else fails, create a basic summary from the video title
         result = {
@@ -149,7 +149,7 @@ Where difficulty is: beginner, intermediate, or advanced`;
           nextSteps: ['Review the material', 'Try hands-on examples'],
           difficulty: 'intermediate'
         };
-        console.log('⚠️ Using fallback summary');
+        console.log('Using fallback summary');
       }
     }
     
@@ -164,11 +164,11 @@ Where difficulty is: beginner, intermediate, or advanced`;
       difficulty: result.difficulty || 'intermediate'
     };
     
-    console.log(`✅ Generated summary with ${finalResult.keyPoints?.length || 0} key points`);
+    console.log(`Generated summary with ${finalResult.keyPoints?.length || 0} key points`);
     return finalResult;
     
   } catch (error) {
-    console.error('❌ Summary generation error:', error.message);
+    console.error('Summary generation error:', error.message);
     throw new Error(`Failed to generate summary: ${error.message}`);
   }
 }

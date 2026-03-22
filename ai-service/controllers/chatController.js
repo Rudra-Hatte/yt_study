@@ -36,7 +36,7 @@ Context: ${context || 'General study help'}`;
       systemPrompt += `\nCourse Context: Student is currently working on course ID ${courseId}`;
     }
 
-    console.log('🤖 Calling model gateway for chat...');
+    console.log('Calling model gateway for chat...');
     const response = await chatWithFallback({
       systemPrompt,
       userPrompt: message,
@@ -45,7 +45,7 @@ Context: ${context || 'General study help'}`;
     });
 
     const aiResponse = response.text || '';
-    console.log('✅ Chat response received successfully');
+    console.log('Chat response received successfully');
 
     res.json({ 
       success: true, 
@@ -56,7 +56,7 @@ Context: ${context || 'General study help'}`;
     });
 
   } catch (error) {
-    console.error('❌ AI Chat error:', error);
+    console.error('AI Chat error:', error);
     console.error('Error stack:', error.stack);
     console.error('Error details:', {
       message: error.message,

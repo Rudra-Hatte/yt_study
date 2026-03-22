@@ -14,13 +14,13 @@ require('dotenv').config();
 async function generateQuiz(videoId, title, numQuestions = 5, difficulty = 'medium', transcript = null, focusTopic = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const topicLabel = String(focusTopic || '').trim();
-  console.log('🎬 Generating quiz for video:', videoUrl);
-  console.log('📝 Title:', title);
+  console.log('Generating quiz for video:', videoUrl);
+  console.log('Title:', title);
   if (topicLabel) {
-    console.log('🎯 Topic focus:', topicLabel);
+    console.log('Topic focus:', topicLabel);
   }
   if (transcript) {
-    console.log('📄 Using transcript content (length:', transcript.length, 'chars)');
+    console.log('Using transcript content (length:', transcript.length, 'chars)');
   }
   
   let contentSource = '';
@@ -50,7 +50,7 @@ The JSON must have this exact structure:
 Where correctAnswer is the index (0-3) of the correct option in the options array.`;
 
   try {
-    console.log('🤖 Calling model gateway for quiz generation...');
+    console.log('Calling model gateway for quiz generation...');
     const response = await chatWithFallback({
       systemPrompt: 'You are a quiz generator that creates educational multiple-choice questions. Always respond with valid JSON only, no markdown or extra text.',
       userPrompt: prompt,
@@ -59,7 +59,7 @@ Where correctAnswer is the index (0-3) of the correct option in the options arra
     });
 
     const textResponse = response.text || '';
-    console.log('✅ Model response received');
+    console.log('Model response received');
     
     // Extract JSON from response
     let jsonStr = textResponse.trim();
@@ -74,11 +74,11 @@ Where correctAnswer is the index (0-3) of the correct option in the options arra
     }
     
     const result = JSON.parse(jsonStr);
-    console.log(`✅ Generated ${result.questions?.length || 0} quiz questions`);
+    console.log(`Generated ${result.questions?.length || 0} quiz questions`);
     return result;
     
   } catch (error) {
-    console.error('❌ Quiz generation error:', error.message);
+    console.error('Quiz generation error:', error.message);
     throw new Error(`Failed to generate quiz: ${error.message}`);
   }
 }

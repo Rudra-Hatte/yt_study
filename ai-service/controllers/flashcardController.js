@@ -9,7 +9,7 @@ exports.createFlashcards = async (req, res, next) => {
   try {
     const { videoId, numCards = 10, title, useRag = true, focusTopic } = req.body;
     
-    console.log('🃏 Flashcard generation requested for video:', videoId);
+    console.log('Flashcard generation requested for video:', videoId);
     
     if (!videoId) {
       return res.status(400).json({ success: false, error: 'Video ID is required' });
@@ -37,7 +37,7 @@ exports.createFlashcards = async (req, res, next) => {
 
         flashcards = { ...ragResponse.data, rag: ragResponse.rag };
       } catch (ragError) {
-        console.warn('⚠️ RAG flashcard path failed, trying transcript extraction:', ragError.message);
+        console.warn('RAG flashcard path failed, trying transcript extraction:', ragError.message);
       }
     }
 
@@ -47,40 +47,40 @@ exports.createFlashcards = async (req, res, next) => {
         try {
           transcript = await getVideoTranscript(videoId);
           if (transcript && transcript.trim().length > 100) {
-            console.log('✅ Transcript extracted, will use for generation');
+            console.log('Transcript extracted, will use for generation');
           } else {
             transcript = null;
           }
         } catch (transcriptError) {
-          console.log('ℹ️ Transcript extraction failed, will use title-only mode:', transcriptError.message);
+          console.log('Transcript extraction failed, will use title-only mode:', transcriptError.message);
           transcript = null;
         }
       }
 
       // Fallback: generate from explicit topic when provided.
-      console.log('🤖 Generating flashcards with standard fallback path...');
+      console.log('Generating flashcards with standard fallback path...');
       try {
         flashcards = await generateFlashcards(videoId, safeTitle, numCards, transcript, topicFocus || null);
         flashcards.rag = { used: false, fallback: true, hasTranscript: !!transcript };
       } catch (modelError) {
-        console.warn('⚠️ Standard flashcard generation failed, trying link-only fallback:', modelError.message);
+        console.warn('Standard flashcard generation failed, trying link-only fallback:', modelError.message);
         try {
           flashcards = await generateFlashcardsFromLink(videoId, safeTitle, numCards, topicFocus || null);
           flashcards.rag = { used: false, fallback: true, mode: 'link-only-model' };
         } catch (linkError) {
-          console.warn('⚠️ Link-only flashcard generation failed, using local fallback:', linkError.message);
+          console.warn('Link-only flashcard generation failed, using local fallback:', linkError.message);
           flashcards = buildFallbackFlashcards(videoId, safeTitle, numCards, topicFocus || null);
           flashcards.rag = { used: false, fallback: true, mode: 'local' };
         }
       }
     }
     
-    console.log('✅ Flashcards generated successfully');
+    console.log('Flashcards generated successfully');
     
     // Send response
     res.json({ success: true, data: flashcards });
   } catch (error) {
-    console.error('❌ Flashcard generation error:', error.message);
+    console.error('Flashcard generation error:', error.message);
     console.error('Stack:', error.stack);
     res.status(500).json({ 
       success: false, 

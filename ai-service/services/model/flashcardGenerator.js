@@ -12,13 +12,13 @@ const { chatWithFallback } = require('../modelClient');
 async function generateFlashcards(videoId, title, numCards = 10, transcript = null, focusTopic = null) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const topicLabel = String(focusTopic || '').trim();
-  console.log('📚 Generating flashcards for video:', videoUrl);
-  console.log('📝 Title:', title);
+  console.log('Generating flashcards for video:', videoUrl);
+  console.log('Title:', title);
   if (topicLabel) {
-    console.log('🎯 Topic focus:', topicLabel);
+    console.log('Topic focus:', topicLabel);
   }
   if (transcript) {
-    console.log('📄 Using transcript content (length:', transcript.length, 'chars)');
+    console.log('Using transcript content (length:', transcript.length, 'chars)');
   }
   
   let contentSource = '';
@@ -53,7 +53,7 @@ The JSON must have this exact structure:
 {"flashcards":[{"front":"Question or term here","back":"Answer or explanation here","tags":["relevant","topic","tags"]}]}`;
 
   try {
-    console.log('🤖 Calling model gateway for flashcards...');
+    console.log('Calling model gateway for flashcards...');
     const response = await chatWithFallback({
       systemPrompt: 'You are an educational flashcard creator. Always respond with valid JSON only, no markdown or extra text.',
       userPrompt: prompt,
@@ -62,7 +62,7 @@ The JSON must have this exact structure:
     });
 
     const textResponse = response.text || '';
-    console.log('✅ Model response received for flashcards');
+    console.log('Model response received for flashcards');
     
     // Extract JSON from response
     let jsonStr = textResponse.trim();
@@ -82,7 +82,7 @@ The JSON must have this exact structure:
       result = JSON.parse(jsonStr);
     } catch (parseError) {
       // Try to fix common JSON issues
-      console.log('⚠️ JSON parse failed, attempting to fix...');
+      console.log('JSON parse failed, attempting to fix...');
       
       // Try to extract flashcards array even if JSON is malformed
       const flashcardsMatch = jsonStr.match(/"flashcards"\s*:\s*\[([\s\S]*)\]/);
@@ -110,7 +110,7 @@ The JSON must have this exact structure:
           
           if (cards.length > 0) {
             result = { flashcards: cards };
-            console.log(`✅ Recovered ${cards.length} flashcards from partial data`);
+            console.log(`Recovered ${cards.length} flashcards from partial data`);
           } else {
             throw parseError;
           }
@@ -122,11 +122,11 @@ The JSON must have this exact structure:
       }
     }
     
-    console.log(`✅ Generated ${result.flashcards?.length || 0} flashcards`);
+    console.log(`Generated ${result.flashcards?.length || 0} flashcards`);
     return result;
     
   } catch (error) {
-    console.error('❌ Flashcard generation error:', error.message);
+    console.error('Flashcard generation error:', error.message);
     throw new Error(`Failed to generate flashcards: ${error.message}`);
   }
 }
