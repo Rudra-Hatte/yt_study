@@ -53,14 +53,14 @@ app.get('/health', (req, res) => {
 const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
 if (!MONGODB_URI) {
-  console.error('❌ MONGODB_URI is not defined in environment variables');
+  console.error('MONGODB_URI is not defined in environment variables');
   process.exit(1);
 }
 
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB Connected'))
+  .then(() => console.log('MongoDB Connected'))
   .catch(err => {
-    console.error('❌ Database Connection Error:', err);
+    console.error('Database Connection Error:', err);
     process.exit(1);
   });
 
@@ -96,9 +96,9 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Backend server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🗄️  Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Connecting...'}`);
+  console.log(`Backend server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Connecting...'}`);
 });
 
 // Handle graceful shutdown

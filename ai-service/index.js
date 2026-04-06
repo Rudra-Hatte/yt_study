@@ -9,17 +9,17 @@ const { connectDatabase } = require('./config/database');
 const app = express();
 
 // Validate API keys are loaded
-console.log('🔑 API Key Rotation System Initialized');
+console.log('API Key Rotation System Initialized');
 console.log(apiKeyRotator.getStats());
-console.log('🤖 Primary model:', String(process.env.PRIMARY_MODEL || '').trim() || 'llama-3.3-70b-versatile (default)');
-console.log('🛟 Backup model:', String(process.env.BACKUP_MODEL || '').trim() || 'gemini-2.5-flash (default)');
+console.log('Primary model:', String(process.env.PRIMARY_MODEL || '').trim() || 'llama-3.3-70b-versatile (default)');
+console.log('Backup model:', String(process.env.BACKUP_MODEL || '').trim() || 'gemini-2.5-flash (default)');
 
 // Middleware
 const allowedOrigins = process.env.FRONTEND_URL 
   ? [process.env.FRONTEND_URL, process.env.BACKEND_URL, 'http://localhost:5173', 'http://localhost:5000']
   : ['http://localhost:5173', 'http://localhost:5000'];
 
-console.log('🌐 Allowed CORS origins:', allowedOrigins);
+console.log('Allowed CORS origins:', allowedOrigins);
 
 app.use(cors({
   origin: allowedOrigins,
@@ -70,15 +70,15 @@ async function start() {
     if (ragEnabled) {
       await connectDatabase();
     } else {
-      console.warn('⚠️  RAG is disabled; skipping MongoDB connection at startup');
+      console.warn('RAG is disabled; skipping MongoDB connection at startup');
     }
 
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🤖 AI Service running on port ${PORT}`);
-      console.log('🧠 RAG endpoints available at /api/rag/*');
+      console.log(`AI Service running on port ${PORT}`);
+      console.log('RAG endpoints available at /api/rag/*');
     });
   } catch (error) {
-    console.error('❌ Failed to start AI service:', error.message);
+    console.error('Failed to start AI service:', error.message);
     process.exit(1);
   }
 }
